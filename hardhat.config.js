@@ -13,33 +13,8 @@ module.exports = {
     compilers: [
       {
         version: '0.8.24',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          viaIR: true,
-        },
       }
     ]
-  },
-  tracer: {
-    enableAllOpcodes: true,
-  },
-  namedAccounts: {
-    deployer: {
-        default: 0,
-    },
-  },
-  contractSizer: {
-    runOnCompile: true,
-    unit: "B",
-  },
-  gasReporter: {
-    enabled: true,
-    currency: 'USD',
-    token: 'ETH',
-    noColors: false
   },
   etherscan: {
     apiKey: {
@@ -60,7 +35,7 @@ module.exports = {
         chainId: 81457,
         urls: {
           apiURL: "https://api.routescan.io/v2/network/mainnet/evm/81457/etherscan",
-          browserURL: "https://blastscan.io"
+          browserURL: "https://blastexplorer.io"
         }
       }
     ]
@@ -74,8 +49,5 @@ module.exports = {
       url: 'https://rpc.blast.io',
       accounts: [process.env.DEPLOYER_PRIVATE_KEY]
     },
-  },
-  sourcify: {
-    enabled: true
   }
 };

@@ -20,15 +20,6 @@ async function main() {
 
   const contractAddress = await blpToken.getAddress();
   console.log(`BlastUp Token deployed to: ${contractAddress}`)
-  
-  const args = [
-    mintingAddress,
-  ]
-
-  await hre.run(`verify:verify`, {
-    address: contractAddress,
-    constructorArguments: args
-})
 }
 
 main()
