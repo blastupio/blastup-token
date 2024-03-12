@@ -75,4 +75,7 @@ module.exports = {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY]
     },
   },
+  sourcify: {
+    enabled: true
+  }
 };
