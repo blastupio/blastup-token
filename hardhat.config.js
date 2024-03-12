@@ -9,10 +9,42 @@ require('dotenv').config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.24",
+  solidity: {
+    compilers: [
+      {
+        version: '0.8.24',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          viaIR: true,
+        },
+      }
+    ]
+  },
+  tracer: {
+    enableAllOpcodes: true,
+  },
+  namedAccounts: {
+    deployer: {
+        default: 0,
+    },
+  },
+  contractSizer: {
+    runOnCompile: true,
+    unit: "B",
+  },
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+    token: 'ETH',
+    noColors: false
+  },
   etherscan: {
     apiKey: {
       blast_sepolia: "blast_sepolia", // apiKey is not required, just set a placeholder
+      blast: process.env.BLASTSCAN_API_KEY
     },
     customChains: [
       {
@@ -28,7 +60,7 @@ module.exports = {
         chainId: 81457,
         urls: {
           apiURL: "https://api.routescan.io/v2/network/mainnet/evm/81457/etherscan",
-          browserURL: "https://blastexplorer.io"
+          browserURL: "https://blastscan.io"
         }
       }
     ]
