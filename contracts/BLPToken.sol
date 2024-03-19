@@ -9,9 +9,7 @@ contract BLPToken is ERC20 {
     address immutable public daoAddress;
 
     constructor(address _daoAddress) ERC20("BlastUP Token", "BLP") {
-        if (_daoAddress == address(0)) {
-            return;
-        }
+        require(_daoAddress != address(0), "DAO address cannot be the zero address");
 
         daoAddress = _daoAddress;
         _mint(daoAddress, INITIAL_SUPPLY);
