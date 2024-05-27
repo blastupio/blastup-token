@@ -42,11 +42,14 @@ contract BLPStakeTest is BaseBLPStaking {
     function test_stake() public {
         uint256 amount = 1e18;
         uint256 lockTime = 100;
+        uint256 lockTime2 = 80;
 
         blp.mint(user, amount);
 
-        vm.prank(admin);
+        vm.startPrank(admin);
         stakingBLP.setLockTimeToPercent(lockTime, 10);
+        stakingBLP.setLockTimeToPercent(lockTime2, 5);
+        vm.stopPrank();
 
         vm.startPrank(user);
         blp.approve(address(stakingBLP), amount);
@@ -54,6 +57,10 @@ contract BLPStakeTest is BaseBLPStaking {
         emit BLPStaking.Staked(user, amount);
         stakingBLP.stake(amount, lockTime);
         assertEq(stakingBLP.totalLocked(), amount);
+
+        vm.warp(10);
+        vm.expectRevert("BlastUP: new unlock time must be gte the previous one");
+        stakingBLP.stake(amount, lockTime2);
 
         vm.warp(1e5);
         assertGt(stakingBLP.getRewardOf(user), 0);

@@ -85,6 +85,9 @@ contract BLPStaking is Ownable {
         require(percent > 0, "BlastUP: invalid lockTime");
         require(user.balance + amount >= minBalance, "BlastUP: you must send more to stake");
         require(amount > 0, "BlastUP: amount must be gt 0");
+        require(
+            block.timestamp + lockTime >= user.unlockTimestamp, "BlastUP: new unlock time must be gte the previous one"
+        );
 
         claim();
 
