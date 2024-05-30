@@ -9,8 +9,9 @@ import {IChainlinkOracle} from "./interfaces/IChainlinkOracle.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LockedBLP} from "./LockedBLP.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract BlastUPNFT is ERC721, Ownable {
+contract BlastUPNFT is ERC721, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable USDB;
@@ -91,7 +92,7 @@ contract BlastUPNFT is ERC721, Ownable {
         mintPrice = _mintPrice;
     }
 
-    function mint(address to, address paymentContract) public payable {
+    function mint(address to, address paymentContract) public payable whenNotPaused {
         if (msg.sender == owner()) {
             _mint(to, nextTokenId++);
         } else {
