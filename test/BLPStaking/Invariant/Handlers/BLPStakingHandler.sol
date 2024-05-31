@@ -55,15 +55,12 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
     {
         (uint256 balance,, uint256 unlockTimestamp,) = staking.users(currentActor);
         amount = bound(amount, 1e6, 1e30);
-        percent = uint32(bound(percent, 100, 20_000));
-        lockTime = unlockTimestamp > block.timestamp
-            ? bound(lockTime, Math.max(unlockTimestamp - block.timestamp, 1e4), 1e10)
-            : bound(lockTime, 1e4, 1e10);
+        // percent = uint32(bound(percent, 100, 20_000));
+        // lockTime = unlockTimestamp > block.timestamp
+        //     ? bound(lockTime, Math.max(unlockTimestamp - block.timestamp, 1e4), 1e10)
+        //     : bound(lockTime, 1e4, 1e10);
 
         blp.mint(currentActor, amount);
-
-        vm.prank(staking.owner());
-        staking.setLockTimeToPercent(lockTime, percent);
 
         if (balance > 0) {
             uint256 reward = staking.getRewardOf(currentActor);
@@ -81,7 +78,7 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
 
         vm.startPrank(currentActor);
         blp.approve(address(staking), amount);
-        staking.stake(amount, lockTime);
+        staking.stake(amount);
         vm.stopPrank();
 
         ghost_stakedSum += amount;

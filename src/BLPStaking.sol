@@ -19,7 +19,8 @@ contract BLPStaking is Ownable {
     }
 
     mapping(address => UserState) public users;
-    mapping(uint256 => uint32) lockTimeToPercent;
+    uint256 public lockTime;
+    uint32 public percent;
 
     /// @notice Token being staked.
     IERC20Metadata public immutable stakeToken;
@@ -36,9 +37,17 @@ contract BLPStaking is Ownable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _stakeToken, address _rewardToken, address _points, address _pointsOperator)
-        Ownable(_owner)
-    {
+    constructor(
+        address _owner,
+        address _stakeToken,
+        address _rewardToken,
+        address _points,
+        address _pointsOperator,
+        uint256 _lockTime,
+        uint32 _percent
+    ) Ownable(_owner) {
+        lockTime = _lockTime;
+        percent = _percent;
         stakeToken = IERC20Metadata(_stakeToken);
         rewardToken = IERC20Metadata(_rewardToken);
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
@@ -72,22 +81,18 @@ contract BLPStaking is Ownable {
     }
 
     /// @notice Maps a given lockTime in secods to yearly APY user can get by staking tokens for that period of time.
-    function setLockTimeToPercent(uint256 lockTime, uint32 percent) external onlyOwner {
-        lockTimeToPercent[lockTime] = percent;
+    function setLockTimeAndPercent(uint256 _lockTime, uint32 _percent) external onlyOwner {
+        lockTime = _lockTime;
+        percent = _percent;
     }
 
     /// @notice Stake given amount for given amount of time
     /// If user already has staked amount, lock is restarted.
-    function stake(uint256 amount, uint256 lockTime) external {
+    function stake(uint256 amount) external {
         UserState storage user = users[msg.sender];
-        uint32 percent = lockTimeToPercent[lockTime];
 
-        require(percent > 0, "BlastUP: invalid lockTime");
         require(user.balance + amount >= minBalance, "BlastUP: you must send more to stake");
         require(amount > 0, "BlastUP: amount must be gt 0");
-        require(
-            block.timestamp + lockTime >= user.unlockTimestamp, "BlastUP: new unlock time must be gte the previous one"
-        );
 
         claim();
 

@@ -18,6 +18,8 @@ contract BaseLockedBLP is Test {
     LockedBLP lockedBLP;
     BlastPointsMock points;
     LockedBLPStaking lockedBLPStaking;
+    uint256 lockTime;
+    uint32 percent;
 
     address user;
     address user2;
@@ -29,6 +31,8 @@ contract BaseLockedBLP is Test {
         user = address(10);
         user2 = address(11);
         user3 = address(12);
+        lockTime = 1000;
+        percent = 10 * 1e2;
 
         vm.startPrank(admin);
         points = new BlastPointsMock();
@@ -36,7 +40,8 @@ contract BaseLockedBLP is Test {
         address lockedBLPStakingAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1);
         lockedBLP =
             new LockedBLP(lockedBLPStakingAddress, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000);
-        lockedBLPStaking = new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin);
+        lockedBLPStaking =
+            new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
         vm.stopPrank();
         vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStaking)), true);
         vm.assertEq(address(blp), lockedBLP.blp());

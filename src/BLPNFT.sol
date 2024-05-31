@@ -10,6 +10,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LockedBLP} from "./LockedBLP.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract BlastUPNFT is ERC721, Ownable, Pausable {
     using SafeERC20 for IERC20;
@@ -19,12 +20,12 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
     uint8 public immutable decimalsUSDB;
     IChainlinkOracle public immutable oracle;
     uint8 public immutable oracleDecimals;
-    address addressForCollected;
+    address public addressForCollected;
 
     uint256 public mintPrice; // in USDT
     uint256 public nextTokenId;
 
-    address lockedBLP;
+    address public lockedBLP;
 
     /// @notice Whitelist of addresses which can receive BlastUPNFT.
     mapping(address account => bool) public transferWhitelist;
@@ -32,7 +33,7 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
     constructor(
         string memory name_,
         string memory symbol_,
-        address _weth, 
+        address _weth,
         address _usdb,
         address _points,
         address _pointsOperator,
@@ -46,6 +47,7 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
         USDB = IERC20(_usdb);
         oracle = IChainlinkOracle(_oracle);
         oracleDecimals = oracle.decimals();
+        decimalsUSDB = IERC20Metadata(_usdb).decimals();
         addressForCollected = _addressForCollected;
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
 
@@ -90,6 +92,14 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
 
     function setMintPrice(uint256 _mintPrice) external onlyOwner {
         mintPrice = _mintPrice;
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function mint(address to, address paymentContract) public payable whenNotPaused {

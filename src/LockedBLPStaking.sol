@@ -7,9 +7,15 @@ import {BLPStaking} from "./BLPStaking.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LockedBLPStaking is Ownable, BLPStaking {
-    constructor(address _owner, address _stakeToken, address _rewardToken, address _points, address _pointsOperator)
-        BLPStaking(_owner, _stakeToken, _rewardToken, _points, _pointsOperator)
-    {}
+    constructor(
+        address _owner,
+        address _stakeToken,
+        address _rewardToken,
+        address _points,
+        address _pointsOperator,
+        uint256 _lockTime,
+        uint32 _percent
+    ) BLPStaking(_owner, _stakeToken, _rewardToken, _points, _pointsOperator, _lockTime, _percent) {}
 
     function getRewardOf(address addr) public view override returns (uint256) {
         if (block.timestamp < LockedBLP(address(stakeToken)).tgeTimestamp()) return 0;

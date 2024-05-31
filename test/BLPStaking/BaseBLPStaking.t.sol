@@ -16,6 +16,8 @@ contract BaseBLPStaking is Test {
 
     BLPStaking stakingBLP;
     BlastPointsMock points;
+    uint256 lockTime;
+    uint32 percent;
 
     address user;
     address user2;
@@ -27,11 +29,13 @@ contract BaseBLPStaking is Test {
         user = address(10);
         user2 = address(11);
         user3 = address(12);
+        lockTime = 1000;
+        percent = 10 * 1e2;
 
         vm.startPrank(admin);
         blp = new ERC20Mock("BlastUp", "BLP", 18);
         points = new BlastPointsMock();
-        stakingBLP = new BLPStaking(admin, address(blp), address(blp), address(points), admin);
+        stakingBLP = new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTime, percent);
         vm.stopPrank();
     }
 }
