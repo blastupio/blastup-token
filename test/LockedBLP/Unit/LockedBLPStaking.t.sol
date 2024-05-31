@@ -72,14 +72,14 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         uint256 reward = lockedBLPStaking.getRewardOf(user);
         assertEq(reward, 0);
 
-        vm.warp(lockTime * 1e6);
+        vm.warp(lockTimes[0] * 1e6);
         assertGt(lockedBLPStaking.getRewardOf(user), 0);
     }
 
     modifier stake() {
         uint256 amount = 1e18;
 
-        uint256 preCalculatedReward = (amount * percent / 1e4) * lockTime / 365 days;
+        uint256 preCalculatedReward = (amount * percents[0] / 1e4) * lockTimes[0] / 365 days;
         address[] memory to = new address[](1);
         uint256[] memory amountMint = new uint256[](1);
         amountMint[0] = amount;
@@ -103,7 +103,7 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         amountMint[0] = amount;
         to[0] = user;
 
-        uint256 preCalculatedReward = (amount * percent / 1e4) * lockTime / 365 days;
+        uint256 preCalculatedReward = (amount * percents[0] / 1e4) * lockTimes[0] / 365 days;
         vm.prank(admin);
         lockedBLP.mint(to, amountMint);
         blp.mint(address(lockedBLPStaking), preCalculatedReward);
@@ -112,7 +112,7 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         lockedBLP.approve(address(lockedBLPStaking), amount);
         lockedBLPStaking.stake(amount);
         vm.stopPrank();
-        vm.warp(lockTime * 1e5);
+        vm.warp(lockTimes[0] * 1e5);
         _;
     }
 

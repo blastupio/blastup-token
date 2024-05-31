@@ -26,7 +26,7 @@ contract LockedBLP is ERC20, Ownable {
     mapping(address minter => bool) public mintersWhitelist;
 
     constructor(
-        address _lockedBLPStaking,
+        address[] memory _lockedBLPStakings,
         address _blp,
         address _points,
         address _pointsOperator,
@@ -44,7 +44,10 @@ contract LockedBLP is ERC20, Ownable {
         vestingDuration = _vestingDuration;
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
 
-        transferWhitelist[_lockedBLPStaking] = true;
+        for (uint256 i = 0; i < _lockedBLPStakings.length; i++) {
+            transferWhitelist[_lockedBLPStakings[i]] = true;
+        }
+
         transferWhitelist[address(0)] = true;
         mintersWhitelist[admin] = true;
         mintersWhitelist[blpNFT] = true;

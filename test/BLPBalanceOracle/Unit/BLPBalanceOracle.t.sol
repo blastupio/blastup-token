@@ -8,7 +8,7 @@ contract BLPBalanceOracleTest is BaseBLPBalanceOracle {
         vm.assertEq(blpOracle.contains(address(lockedBLPStaking)), true);
         vm.assertEq(blpOracle.contains(address(stakingBLP)), true);
         address[] memory stakingAddresses = blpOracle.values();
-        vm.assertEq(stakingAddresses.length, 2);
+        vm.assertEq(stakingAddresses.length, 6);
 
         vm.startPrank(admin);
         vm.assertEq(blpOracle.contains(address(100)), false);

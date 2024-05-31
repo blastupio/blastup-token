@@ -18,8 +18,11 @@ contract BaseLockedBLP is Test {
     LockedBLP lockedBLP;
     BlastPointsMock points;
     LockedBLPStaking lockedBLPStaking;
-    uint256 lockTime;
-    uint32 percent;
+    LockedBLPStaking lockedBLPStaking2;
+    LockedBLPStaking lockedBLPStaking3;
+    address[] lockedBLPStakingAddresses;
+    uint256[] lockTimes;
+    uint32[] percents;
 
     address user;
     address user2;
@@ -31,20 +34,33 @@ contract BaseLockedBLP is Test {
         user = address(10);
         user2 = address(11);
         user3 = address(12);
-        lockTime = 1000;
-        percent = 10 * 1e2;
+        lockTimes.push(1000);
+        percents.push(10 * 1e2);
+        lockTimes.push(2000);
+        percents.push(20 * 1e2);
+        lockTimes.push(3000);
+        percents.push(30 * 1e2);
 
         vm.startPrank(admin);
         points = new BlastPointsMock();
         blp = new ERC20Mock("BlastUp", "BLP", 18);
-        address lockedBLPStakingAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1);
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1));
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2));
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 3));
         lockedBLP = new LockedBLP(
-            lockedBLPStakingAddress, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
+            lockedBLPStakingAddresses, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
         );
-        lockedBLPStaking =
-            new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
+        lockedBLPStaking = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[0], percents[0]
+        );
+        lockedBLPStaking2 = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[1], percents[1]
+        );
+        lockedBLPStaking3 = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[2], percents[2]
+        );
         vm.stopPrank();
-        vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStaking)), true);
+        vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStakingAddresses[0])), true);
         vm.assertEq(address(blp), lockedBLP.blp());
     }
 }

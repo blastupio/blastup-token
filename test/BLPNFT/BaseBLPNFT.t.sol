@@ -26,6 +26,7 @@ contract BaseBlastUPNFT is Test {
     uint256 lockedBLPMintAmount;
     LockedBLP lockedBLP;
     LockedBLPStaking lockedBLPStaking;
+    address[] lockedBLPStakingAddresses;
 
     uint256 lockTime;
     uint32 percent;
@@ -61,10 +62,19 @@ contract BaseBlastUPNFT is Test {
         bytes memory code2 = address(weth).code;
         vm.etch(0x4300000000000000000000000000000000000004, code2);
 
-        address lockedBLPStakingAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1);
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1));
         address blastBoxAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2);
         lockedBLP = new LockedBLP(
-            lockedBLPStakingAddress, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, blastBoxAddress
+            lockedBLPStakingAddresses,
+            address(blp),
+            address(points),
+            admin,
+            admin,
+            1000,
+            10,
+            2000,
+            10000,
+            blastBoxAddress
         );
         lockedBLPStaking =
             new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);

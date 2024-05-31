@@ -19,7 +19,16 @@ contract BaseBLPBalanceOracle is Test {
     LockedBLP lockedBLP;
     BlastPointsMock points;
     LockedBLPStaking lockedBLPStaking;
+    LockedBLPStaking lockedBLPStaking2;
+    LockedBLPStaking lockedBLPStaking3;
+    address[] lockedBLPStakingAddresses;
+    uint256[] lockTimes;
+    uint32[] percents;
     BLPStaking stakingBLP;
+    BLPStaking stakingBLP2;
+    BLPStaking stakingBLP3;
+    address[] stakingBLPAddresses;
+
     BLPBalanceOracle blpOracle;
     uint256 lockTime;
     uint32 percent;
@@ -34,25 +43,53 @@ contract BaseBLPBalanceOracle is Test {
         user = address(10);
         user2 = address(11);
         user3 = address(12);
+        lockTimes.push(1000);
+        percents.push(10 * 1e2);
+        lockTimes.push(2000);
+        percents.push(20 * 1e2);
+        lockTimes.push(3000);
+        percents.push(30 * 1e2);
         lockTime = 1000;
         percent = 10 * 1e2;
 
         vm.startPrank(admin);
         points = new BlastPointsMock();
         blp = new ERC20Mock("BlastUp", "BLP", 18);
-        address lockedBLPStakingAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1);
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1));
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2));
+        lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 3));
         lockedBLP = new LockedBLP(
-            lockedBLPStakingAddress, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
+            lockedBLPStakingAddresses, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
         );
-        lockedBLPStaking =
-            new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
+        lockedBLPStaking = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[0], percents[0]
+        );
+        lockedBLPStaking2 = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[1], percents[1]
+        );
+        lockedBLPStaking3 = new LockedBLPStaking(
+            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[2], percents[2]
+        );
+
         stakingBLP = new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTime, percent);
-        address[] memory stakings = new address[](2);
-        stakings[0] = lockedBLPStakingAddress;
-        stakings[1] = address(stakingBLP);
+        stakingBLP2 =
+            new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTimes[1], percents[1]);
+        stakingBLP3 =
+            new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTimes[2], percents[2]);
+        stakingBLPAddresses.push(address(stakingBLP));
+        stakingBLPAddresses.push(address(stakingBLP2));
+        stakingBLPAddresses.push(address(stakingBLP3));
+
+        address[] memory stakings = new address[](lockedBLPStakingAddresses.length + stakingBLPAddresses.length);
+        for (uint256 i = 0; i < lockedBLPStakingAddresses.length; i++) {
+            stakings[i] = lockedBLPStakingAddresses[i];
+        }
+        for (uint256 i = lockedBLPStakingAddresses.length; i < stakings.length; i++) {
+            stakings[i] = stakingBLPAddresses[i - lockedBLPStakingAddresses.length];
+        }
         blpOracle = new BLPBalanceOracle(admin, stakings);
         vm.stopPrank();
-        vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStaking)), true);
+        vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStakingAddresses[0])), true);
         vm.assertEq(address(blp), lockedBLP.blp());
     }
 }
