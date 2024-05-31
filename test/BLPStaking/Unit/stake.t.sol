@@ -2,7 +2,6 @@
 pragma solidity >=0.8.25;
 
 import {BaseBLPStaking, BLPStaking} from "../BaseBLPStaking.t.sol";
-import {console} from "forge-std/console.sol";
 
 contract BLPStakeTest is BaseBLPStaking {
     function test_RevertStake_BalanceMustBeGtMin() public {
@@ -58,8 +57,6 @@ contract BLPStakeTest is BaseBLPStaking {
         assertEq(reward, 0);
 
         vm.warp(lockTime * 1e6);
-        // (uint256 balance, uint256 lastClaimTimestamp, uint256 unlockTimestamp, uint256 yearlyReward) = stakingBLP.users(user);
-        // console.log(yearlyReward, balance);
         assertGt(stakingBLP.getRewardOf(user), 0);
     }
 }

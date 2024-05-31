@@ -8,8 +8,9 @@ import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
 import {LockedBLP} from "../../src/LockedBLP.sol";
 import {BlastPointsMock} from "../../src/mocks/BlastPointsMock.sol";
 import {LockedBLPStaking, BLPStaking} from "../../src/LockedBLPStaking.sol";
+import {BLPBalanceOracle} from "../../src/BLPBalanceOracle.sol";
 
-contract BaseLockedBLP is Test {
+contract BaseBLPBalanceOracle is Test {
     ERC20Mock blp;
 
     address internal admin;
@@ -18,6 +19,8 @@ contract BaseLockedBLP is Test {
     LockedBLP lockedBLP;
     BlastPointsMock points;
     LockedBLPStaking lockedBLPStaking;
+    BLPStaking stakingBLP;
+    BLPBalanceOracle blpOracle;
     uint256 lockTime;
     uint32 percent;
 
@@ -43,6 +46,11 @@ contract BaseLockedBLP is Test {
         );
         lockedBLPStaking =
             new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
+        stakingBLP = new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTime, percent);
+        address[] memory stakings = new address[](2);
+        stakings[0] = lockedBLPStakingAddress;
+        stakings[1] = address(stakingBLP);
+        blpOracle = new BLPBalanceOracle(admin, stakings);
         vm.stopPrank();
         vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStaking)), true);
         vm.assertEq(address(blp), lockedBLP.blp());

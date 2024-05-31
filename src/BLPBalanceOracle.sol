@@ -5,63 +5,41 @@ pragma solidity ^0.8.25;
 import {BLPStaking} from "./BLPStaking.sol";
 import {IBLPBalanceOracle} from "./interfaces/IBLPBalanceOracle.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract BLPBalanceOracle is IBLPBalanceOracle, Ownable {
-    struct AddressSet {
-        address[] addrs;
-        mapping(address => bool) saved;
-    }
+    using EnumerableSet for EnumerableSet.AddressSet;
 
-    AddressSet blpStaking;
-    AddressSet lockedBLPStaking;
+    EnumerableSet.AddressSet blpStaking;
 
-    constructor(address _owner, address[] memory _blpStaking, address[] memory _lockedBLPStaking) Ownable(_owner) {
+    constructor(address _owner, address[] memory _blpStaking) Ownable(_owner) {
         for (uint256 i = 0; i < _blpStaking.length; i++) {
-            blpStaking.addrs.push(_blpStaking[i]);
-            blpStaking.saved[_blpStaking[i]] = true;
-        }
-        for (uint256 i = 0; i < _lockedBLPStaking.length; i++) {
-            lockedBLPStaking.addrs.push(_lockedBLPStaking[i]);
-            lockedBLPStaking.saved[_lockedBLPStaking[i]] = true;
+            blpStaking.add(_blpStaking[i]);
         }
     }
 
     function balanceOf(address user) external view returns (uint256) {
         uint256 balance;
-        for (uint256 i = 0; i < blpStaking.addrs.length; i++) {
-            if (blpStaking.saved[blpStaking.addrs[i]]) {
-                (uint256 amountOfTokens,,,) = BLPStaking(blpStaking.addrs[i]).users(user);
-                balance += amountOfTokens;
-            }
-        }
-        for (uint256 i = 0; i < lockedBLPStaking.addrs.length; i++) {
-            if (lockedBLPStaking.saved[lockedBLPStaking.addrs[i]]) {
-                (uint256 amountOfLockedTokens,,,) = BLPStaking(lockedBLPStaking.addrs[i]).users(user);
-                balance += amountOfLockedTokens;
-            }
+        for (uint256 i = 0; i < blpStaking.length(); i++) {
+            (uint256 amountOfTokens,,,) = BLPStaking(blpStaking.at(i)).users(user);
+            balance += amountOfTokens;
         }
         return balance;
     }
 
     function contains(address addr) external view returns (bool) {
-        return blpStaking.saved[addr] || lockedBLPStaking.saved[addr];
+        return blpStaking.contains(addr);
+    }
+
+    function values() external view returns (address[] memory) {
+        return blpStaking.values();
     }
 
     function addBLPStaking(address _blpStaking) external onlyOwner {
-        blpStaking.addrs.push(_blpStaking);
-        blpStaking.saved[_blpStaking] = true;
-    }
-
-    function addLockedBLPStaking(address _lockedBLPStaking) external onlyOwner {
-        lockedBLPStaking.addrs.push(_lockedBLPStaking);
-        lockedBLPStaking.saved[_lockedBLPStaking] = true;
+        blpStaking.add(_blpStaking);
     }
 
     function removeBLPStaking(address _blpStaking) external onlyOwner {
-        blpStaking.saved[_blpStaking] = false;
-    }
-
-    function removeLockedBLPStaking(address _lockedBLPStaking) external onlyOwner {
-        lockedBLPStaking.saved[_lockedBLPStaking] = false;
+        blpStaking.remove(_blpStaking);
     }
 }

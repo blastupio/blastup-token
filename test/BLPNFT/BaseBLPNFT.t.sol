@@ -11,6 +11,7 @@ import {BlastUPNFT} from "../../src/BLPNFT.sol";
 import {OracleMock} from "../../src/mocks/OracleMock.sol";
 import {WETHRebasingMock} from "../../src/mocks/WETHRebasingMock.sol";
 import {ERC20RebasingMock} from "../../src/mocks/ERC20RebasingMock.sol";
+import {LockedBLP, LockedBLPStaking} from "../../src/LockedBLPStaking.sol";
 
 contract BaseBlastUPNFT is Test {
     ERC20Mock blp;
@@ -22,6 +23,12 @@ contract BaseBlastUPNFT is Test {
     BlastPointsMock points;
     OracleMock oracle;
     uint256 mintPrice;
+    uint256 lockedBLPMintAmount;
+    LockedBLP lockedBLP;
+    LockedBLPStaking lockedBLPStaking;
+
+    uint256 lockTime;
+    uint32 percent;
 
     address user;
     address user2;
@@ -37,6 +44,9 @@ contract BaseBlastUPNFT is Test {
         user2 = address(11);
         user3 = address(12);
         mintPrice = 1e18;
+        lockedBLPMintAmount = 2000 * 1e18;
+        lockTime = 1000;
+        percent = 10 * 1e2;
 
         vm.startPrank(admin);
         blp = new ERC20Mock("BlastUp", "BLP", 18);
@@ -50,9 +60,16 @@ contract BaseBlastUPNFT is Test {
         WETHRebasingMock weth = new WETHRebasingMock("WETH", "WETH", 18);
         bytes memory code2 = address(weth).code;
         vm.etch(0x4300000000000000000000000000000000000004, code2);
+
+        address lockedBLPStakingAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1);
+        address blastBoxAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2);
+        lockedBLP = new LockedBLP(
+            lockedBLPStakingAddress, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, blastBoxAddress
+        );
+        lockedBLPStaking =
+            new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
+
         blastBox = new BlastUPNFT(
-            "BlastUP Box",
-            "BLPBOX",
             address(WETH),
             address(USDB),
             address(points),
@@ -60,7 +77,9 @@ contract BaseBlastUPNFT is Test {
             admin,
             address(oracle),
             address(admin),
-            mintPrice
+            mintPrice,
+            address(lockedBLP),
+            lockedBLPMintAmount
         );
         vm.stopPrank();
     }

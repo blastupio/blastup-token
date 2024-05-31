@@ -23,6 +23,7 @@ contract LockedBLP is ERC20, Ownable {
 
     /// @notice Whitelist of addresses which can receive LockedBLP.
     mapping(address account => bool) public transferWhitelist;
+    mapping(address minter => bool) public mintersWhitelist;
 
     constructor(
         address _lockedBLPStaking,
@@ -33,7 +34,8 @@ contract LockedBLP is ERC20, Ownable {
         uint256 _tgeTimestamp,
         uint8 _tgePercent,
         uint256 _vestingStart,
-        uint256 _vestingDuration
+        uint256 _vestingDuration,
+        address blpNFT
     ) ERC20("BlastUP Locked Token", "LBLP") Ownable(admin) {
         blp = _blp;
         tgeTimestamp = _tgeTimestamp;
@@ -44,6 +46,8 @@ contract LockedBLP is ERC20, Ownable {
 
         transferWhitelist[_lockedBLPStaking] = true;
         transferWhitelist[address(0)] = true;
+        mintersWhitelist[admin] = true;
+        mintersWhitelist[blpNFT] = true;
     }
 
     /// @notice Returns amount of tokens which is unlocked for the given user with respect
@@ -104,7 +108,16 @@ contract LockedBLP is ERC20, Ownable {
         transferWhitelist[addr] = false;
     }
 
-    function mint(address[] memory users, uint256[] memory amounts) external onlyOwner {
+    function addMinter(address addr) external onlyOwner {
+        mintersWhitelist[addr] = true;
+    }
+
+    function removeMinter(address addr) external onlyOwner {
+        mintersWhitelist[addr] = false;
+    }
+
+    function mint(address[] memory users, uint256[] memory amounts) external {
+        require(mintersWhitelist[msg.sender], "BlastUP: you are not in the whitelist");
         for (uint256 i = 0; i < users.length; i++) {
             _initialBalances[users[i]] += amounts[i];
             _mint(users[i], amounts[i]);

@@ -21,8 +21,6 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
         vm.prank(admin);
         blastBox.setMintPrice(1e19);
         vm.assertEq(blastBox.mintPrice(), 1e19);
-
-        vm.assertEq(blastBox.lockedBLP(), address(0));
     }
 
     function test_transfers() public {
@@ -43,7 +41,7 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
         vm.prank(admin);
         blastBox.removeWhitelistedAddress(user2);
         vm.startPrank(user);
-        vm.expectRevert();
+        vm.expectRevert("BlastUP: not whitelisted");
         blastBox.transferFrom(user, user2, 0);
         vm.stopPrank();
     }
@@ -80,18 +78,28 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
         blastBox.mint(user, address(0));
         vm.assertEq(blastBox.balanceOf(user), 1);
         vm.assertEq(blastBox.ownerOf(0), user);
+        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount);
         //mint by other users
         USDB.mint(user2, mintPrice * 2);
         vm.startPrank(user2);
         USDB.approve(address(blastBox), mintPrice);
         blastBox.mint(user2, address(USDB));
+        vm.assertEq(blastBox.balanceOf(user2), 1);
+        vm.assertEq(blastBox.ownerOf(1), user2);
+        vm.assertEq(lockedBLP.balanceOf(user2), lockedBLPMintAmount);
 
         WETH.mint(user2, 1e20);
         WETH.approve(address(blastBox), 1e20);
         blastBox.mint(user, address(WETH));
+        vm.assertEq(blastBox.balanceOf(user), 2);
+        vm.assertEq(blastBox.ownerOf(2), user);
+        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount * 2);
 
         vm.deal(user2, 1e20);
         blastBox.mint{value: 1e20}(user3, address(0));
         vm.assertGt(user2.balance, 0);
+        vm.assertEq(blastBox.balanceOf(user3), 1);
+        vm.assertEq(blastBox.ownerOf(3), user3);
+        vm.assertEq(lockedBLP.balanceOf(user3), lockedBLPMintAmount);
     }
 }

@@ -20,31 +20,33 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
     uint8 public immutable decimalsUSDB;
     IChainlinkOracle public immutable oracle;
     uint8 public immutable oracleDecimals;
-    address public addressForCollected;
+    LockedBLP public immutable lockedBLP;
 
+    address public addressForCollected;
+    uint256 public lockedBLPMintAmount;
     uint256 public mintPrice; // in USDT
     uint256 public nextTokenId;
-
-    address public lockedBLP;
 
     /// @notice Whitelist of addresses which can receive BlastUPNFT.
     mapping(address account => bool) public transferWhitelist;
 
     constructor(
-        string memory name_,
-        string memory symbol_,
         address _weth,
         address _usdb,
         address _points,
         address _pointsOperator,
-        address admin,
+        address dao,
         address _oracle,
         address _addressForCollected,
-        uint256 _mintPrice
-    ) ERC721(name_, symbol_) Ownable(admin) {
+        uint256 _mintPrice,
+        address _lockedBLP,
+        uint256 _lockedBLPMintAmount
+    ) ERC721("BlastUP Box", "BLPBOX") Ownable(dao) {
         mintPrice = _mintPrice;
         WETH = IERC20(_weth);
         USDB = IERC20(_usdb);
+        lockedBLP = LockedBLP(_lockedBLP);
+        lockedBLPMintAmount = _lockedBLPMintAmount;
         oracle = IChainlinkOracle(_oracle);
         oracleDecimals = oracle.decimals();
         decimalsUSDB = IERC20Metadata(_usdb).decimals();
@@ -86,8 +88,8 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
         transferWhitelist[addr] = false;
     }
 
-    function setLockedBLP(address _lockedBLP) external onlyOwner {
-        lockedBLP = _lockedBLP;
+    function setLockedBLPMintAmount(uint256 _lockedBLPMintAmount) external onlyOwner {
+        lockedBLPMintAmount = _lockedBLPMintAmount;
     }
 
     function setMintPrice(uint256 _mintPrice) external onlyOwner {
@@ -103,8 +105,13 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
     }
 
     function mint(address to, address paymentContract) public payable whenNotPaused {
+        address[] memory toLockedBLP = new address[](1);
+        uint256[] memory amountLockedBLP = new uint256[](1);
+        toLockedBLP[0] = to;
+        amountLockedBLP[0] = lockedBLPMintAmount;
         if (msg.sender == owner()) {
             _mint(to, nextTokenId++);
+            lockedBLP.mint(toLockedBLP, amountLockedBLP);
         } else {
             uint256 volume = mintPrice;
             if (msg.value > 0 || paymentContract == address(WETH)) {
@@ -114,6 +121,7 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
             }
 
             _mint(to, nextTokenId++);
+            lockedBLP.mint(toLockedBLP, amountLockedBLP);
 
             if (msg.value > 0) {
                 bool success;
