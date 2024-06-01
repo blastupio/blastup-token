@@ -23,6 +23,8 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
     uint256 public ghost_balanceForRewards;
     mapping(address => uint256) public ghost_userPreCalculatedRewards;
     mapping(address => uint256) public ghost_userRealClaimedRewards;
+    uint256 lockTime = 1000;
+    uint32 percent = 10 * 1e2;
 
     mapping(bytes32 => uint256) public calls;
 
@@ -48,17 +50,13 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
         blp = _blp;
     }
 
-    function stake(uint256 actorSeed, uint256 amount, uint256 lockTime, uint32 percent)
+    function stake(uint256 actorSeed, uint256 amount)
         public
         useActor(actorSeed)
         countCall("stake")
     {
-        (uint256 balance,, uint256 unlockTimestamp,) = staking.users(currentActor);
+        (uint256 balance,,,) = staking.users(currentActor);
         amount = bound(amount, 1e6, 1e30);
-        // percent = uint32(bound(percent, 100, 20_000));
-        // lockTime = unlockTimestamp > block.timestamp
-        //     ? bound(lockTime, Math.max(unlockTimestamp - block.timestamp, 1e4), 1e10)
-        //     : bound(lockTime, 1e4, 1e10);
 
         blp.mint(currentActor, amount);
 
@@ -125,5 +123,12 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
     function warp(uint256 secs) public {
         secs = _bound(secs, 0, 20 days);
         vm.warp(block.timestamp + secs);
+    }
+
+    function updateLockTimePercent() public {
+        percent = uint32(bound(percent, 100, 20_000));
+        lockTime = bound(lockTime, 1e4, 1e10);
+        vm.prank(staking.owner());
+        staking.setLockTimeAndPercent(lockTime, percent);
     }
 }
