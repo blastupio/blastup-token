@@ -76,8 +76,7 @@ contract BaseBlastUPNFT is Test {
             10000,
             blastBoxAddress
         );
-        lockedBLPStaking =
-            new LockedBLPStaking(admin, address(lockedBLP), address(blp), address(points), admin, lockTime, percent);
+        lockedBLPStaking = new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTime, percent);
 
         blastBox = new BlastUPNFT(
             address(WETH),

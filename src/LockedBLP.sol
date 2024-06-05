@@ -46,6 +46,7 @@ contract LockedBLP is ERC20, Ownable {
 
         for (uint256 i = 0; i < _lockedBLPStakings.length; i++) {
             transferWhitelist[_lockedBLPStakings[i]] = true;
+            mintersWhitelist[_lockedBLPStakings[i]] = true;
         }
 
         transferWhitelist[address(0)] = true;

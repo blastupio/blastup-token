@@ -8,6 +8,7 @@ import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
 import {LockedBLP} from "../../src/LockedBLP.sol";
 import {BlastPointsMock} from "../../src/mocks/BlastPointsMock.sol";
 import {LockedBLPStaking, BLPStaking} from "../../src/LockedBLPStaking.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract BaseLockedBLP is Test {
     ERC20Mock blp;
@@ -50,15 +51,12 @@ contract BaseLockedBLP is Test {
         lockedBLP = new LockedBLP(
             lockedBLPStakingAddresses, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
         );
-        lockedBLPStaking = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[0], percents[0]
-        );
-        lockedBLPStaking2 = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[1], percents[1]
-        );
-        lockedBLPStaking3 = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[2], percents[2]
-        );
+        lockedBLPStaking =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[0], percents[0]);
+        lockedBLPStaking2 =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[1], percents[1]);
+        lockedBLPStaking3 =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[2], percents[2]);
         vm.stopPrank();
         vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStakingAddresses[0])), true);
         vm.assertEq(address(blp), lockedBLP.blp());

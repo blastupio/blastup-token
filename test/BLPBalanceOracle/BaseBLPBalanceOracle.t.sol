@@ -61,21 +61,16 @@ contract BaseBLPBalanceOracle is Test {
         lockedBLP = new LockedBLP(
             lockedBLPStakingAddresses, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
         );
-        lockedBLPStaking = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[0], percents[0]
-        );
-        lockedBLPStaking2 = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[1], percents[1]
-        );
-        lockedBLPStaking3 = new LockedBLPStaking(
-            admin, address(lockedBLP), address(blp), address(points), admin, lockTimes[2], percents[2]
-        );
+        lockedBLPStaking =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[0], percents[0]);
+        lockedBLPStaking2 =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[1], percents[1]);
+        lockedBLPStaking3 =
+            new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[2], percents[2]);
 
-        stakingBLP = new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTime, percent);
-        stakingBLP2 =
-            new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTimes[1], percents[1]);
-        stakingBLP3 =
-            new BLPStaking(admin, address(blp), address(blp), address(points), admin, lockTimes[2], percents[2]);
+        stakingBLP = new BLPStaking(admin, address(blp), address(points), admin, lockTime, percent);
+        stakingBLP2 = new BLPStaking(admin, address(blp), address(points), admin, lockTimes[1], percents[1]);
+        stakingBLP3 = new BLPStaking(admin, address(blp), address(points), admin, lockTimes[2], percents[2]);
         stakingBLPAddresses.push(address(stakingBLP));
         stakingBLPAddresses.push(address(stakingBLP2));
         stakingBLPAddresses.push(address(stakingBLP3));

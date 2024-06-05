@@ -25,9 +25,6 @@ contract BLPStaking is Ownable {
     /// @notice Token being staked.
     IERC20Metadata public immutable stakeToken;
 
-    /// @notice Token for rewards.
-    IERC20Metadata public immutable rewardToken;
-
     /// @notice Minimal balance for stake.
     uint256 public minBalance;
 
@@ -40,7 +37,6 @@ contract BLPStaking is Ownable {
     constructor(
         address _owner,
         address _stakeToken,
-        address _rewardToken,
         address _points,
         address _pointsOperator,
         uint256 _lockTime,
@@ -49,17 +45,14 @@ contract BLPStaking is Ownable {
         lockTime = _lockTime;
         percent = _percent;
         stakeToken = IERC20Metadata(_stakeToken);
-        rewardToken = IERC20Metadata(_rewardToken);
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
     }
 
     /// @notice Ensures that balance of the contract is not lower than total amount owed to
     /// users besides rewards.
-    modifier ensureSolvency() {
+    modifier ensureSolvency() virtual {
         _;
-        if (stakeToken == rewardToken) {
-            require(stakeToken.balanceOf(address(this)) >= totalLocked, "BlastUP: insolvency");
-        }
+        require(stakeToken.balanceOf(address(this)) >= totalLocked, "BlastUP: insolvency");
     }
 
     /* ========== VIEWS ========== */
@@ -132,20 +125,20 @@ contract BLPStaking is Ownable {
     }
 
     /// @notice Claim all accrued rewards.
-    function claim() public ensureSolvency returns (uint256 reward) {
+    function claim() public virtual ensureSolvency returns (uint256 reward) {
         UserState storage user = users[msg.sender];
         reward = getRewardOf(msg.sender);
         user.lastClaimTimestamp = block.timestamp;
         if (reward > 0) {
-            rewardToken.safeTransfer(msg.sender, reward);
+            stakeToken.safeTransfer(msg.sender, reward);
             emit Claimed(msg.sender, reward);
         }
     }
 
     /// @notice Function for administrators to withdraw extra amounts sent to the contract
     /// for reward payouts.
-    function withdrawFunds(uint256 amount) external onlyOwner ensureSolvency {
-        rewardToken.safeTransfer(msg.sender, amount);
+    function withdrawFunds(uint256 amount) external virtual onlyOwner ensureSolvency {
+        stakeToken.safeTransfer(msg.sender, amount);
     }
 
     /* ========== EVENTS ========== */

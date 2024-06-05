@@ -1,7 +1,7 @@
 // // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {BaseLockedBLP, LockedBLPStaking, BLPStaking} from "../BaseLockedBLP.t.sol";
+import {BaseLockedBLP, LockedBLPStaking, BLPStaking, LockedBLP, IERC20} from "../BaseLockedBLP.t.sol";
 
 contract LockedBLPStakingTest is BaseLockedBLP {
     function test_RevertStake_BalanceMustBeGtMin() public {
@@ -27,7 +27,7 @@ contract LockedBLPStakingTest is BaseLockedBLP {
     }
 
     function test_stake() public {
-        uint256 amount = 1e18;
+        uint256 amount = 2e18;
 
         address[] memory to = new address[](1);
         uint256[] memory amountMint = new uint256[](1);
@@ -38,13 +38,16 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         lockedBLP.mint(to, amountMint);
 
         vm.startPrank(user);
-        lockedBLP.approve(address(lockedBLPStaking), amount);
-        vm.expectEmit(address(lockedBLPStaking));
+        lockedBLP.approve(address(lockedBLPStaking3), amount);
+        vm.expectEmit(address(lockedBLPStaking3));
         emit BLPStaking.Staked(user, amount);
-        lockedBLPStaking.stake(amount);
+        lockedBLPStaking3.stake(amount);
+
+        vm.warp(block.timestamp + 900);
+        lockedBLPStaking3.claim();
 
         vm.warp(1e5);
-        assertGt(lockedBLPStaking.getRewardOf(user), 0);
+        assertGt(lockedBLPStaking3.getRewardOf(user), 0);
     }
 
     function test_stakeFuzz(uint256 amount) public {
@@ -66,7 +69,7 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         lockedBLPStaking.stake(amount);
         vm.stopPrank();
         vm.prank(admin);
-        vm.expectRevert();
+        vm.expectRevert("Not implemented");
         lockedBLPStaking.withdrawFunds(amount);
 
         uint256 reward = lockedBLPStaking.getRewardOf(user);
@@ -86,7 +89,6 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         to[0] = user;
         vm.prank(admin);
         lockedBLP.mint(to, amountMint);
-        blp.mint(address(lockedBLPStaking), preCalculatedReward);
 
         vm.startPrank(user);
         lockedBLP.approve(address(lockedBLPStaking), amount);
@@ -106,7 +108,6 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         uint256 preCalculatedReward = (amount * percents[0] / 1e4) * lockTimes[0] / 365 days;
         vm.prank(admin);
         lockedBLP.mint(to, amountMint);
-        blp.mint(address(lockedBLPStaking), preCalculatedReward);
 
         vm.startPrank(user);
         lockedBLP.approve(address(lockedBLPStaking), amount);
@@ -120,12 +121,15 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         uint256 reward = lockedBLPStaking.getRewardOf(user);
         vm.assume(reward > 0);
 
-        vm.prank(user);
+        vm.startPrank(user);
+        uint256 lockedBLPBalanceOfUserBefore = lockedBLP.balanceOf(user);
+        vm.expectEmit(address(lockedBLP));
+        emit IERC20.Transfer(address(0), user, reward);
         vm.expectEmit(address(lockedBLPStaking));
         emit BLPStaking.Claimed(user, reward);
         lockedBLPStaking.claim();
-
-        assertEq(blp.balanceOf(user), reward);
+        assertEq(lockedBLP.balanceOf(user), lockedBLPBalanceOfUserBefore + reward);
+        vm.stopPrank();
     }
 
     function test_RevertWithdraw_UnlockTimestamp() public stake {
@@ -137,12 +141,12 @@ contract LockedBLPStakingTest is BaseLockedBLP {
     function test_withdrawFuzz(uint256 amount) public stakeFuzz(amount) {
         uint256 reward = lockedBLPStaking.getRewardOf(user);
         vm.assume(reward > 0);
+        uint256 lockedBLPBalanceOfUserBefore = lockedBLP.balanceOf(user);
         (uint256 balance,,,) = lockedBLPStaking.users(user);
 
         vm.prank(user);
         lockedBLPStaking.withdraw();
 
-        assertEq(blp.balanceOf(user), reward);
-        assertEq(lockedBLP.balanceOf(user), balance);
+        assertEq(lockedBLP.balanceOf(user), lockedBLPBalanceOfUserBefore + balance + reward);
     }
 }

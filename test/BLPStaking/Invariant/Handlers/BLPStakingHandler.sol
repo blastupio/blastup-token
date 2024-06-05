@@ -50,11 +50,7 @@ contract BLPStakingHandler is CommonBase, StdCheats, StdUtils, StdAssertions {
         blp = _blp;
     }
 
-    function stake(uint256 actorSeed, uint256 amount)
-        public
-        useActor(actorSeed)
-        countCall("stake")
-    {
+    function stake(uint256 actorSeed, uint256 amount) public useActor(actorSeed) countCall("stake") {
         (uint256 balance,,,) = staking.users(currentActor);
         amount = bound(amount, 1e6, 1e30);
 

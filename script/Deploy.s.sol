@@ -41,10 +41,10 @@ contract DeployScript is Script {
         address[] memory stakingAddresses = new address[](input.lockTimes.length * 2);
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
             stakingAddresses[i] = lockedBLPStakingAddresses[i] =
-                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 2));
+                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 1));
             console.log("LockedBLPStaking", lockedBLPStakingAddresses[i], "with percent:", input.percents[i]);
         }
-        address blastBoxAddress = vm.computeCreateAddress(address(input.dao), vm.getNonce(input.dao) + 1);
+        address blastBoxAddress = vm.computeCreateAddress(address(input.dao), vm.getNonce(input.dao));
         LockedBLP lockedBLP = new LockedBLP(
             lockedBLPStakingAddresses,
             input.blp,
@@ -73,13 +73,7 @@ contract DeployScript is Script {
 
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
             new LockedBLPStaking(
-                input.dao,
-                address(lockedBLP),
-                input.blp,
-                input.points,
-                input.pointsOperator,
-                input.lockTimes[i],
-                input.percents[i]
+                input.dao, address(lockedBLP), input.points, input.pointsOperator, input.lockTimes[i], input.percents[i]
             );
         }
 
@@ -87,7 +81,6 @@ contract DeployScript is Script {
             stakingAddresses[i] = address(
                 new BLPStaking(
                     input.dao,
-                    input.blp,
                     input.blp,
                     input.points,
                     input.pointsOperator,
@@ -119,7 +112,7 @@ contract DeployScript is Script {
         ERC20RebasingMock WETH = WETHRebasingTestnetMock(0x3470769fBA0Aa949ecdAF83CAD069Fa2DC677389);
         address oracle = 0xc447B8cAd2db7a8B0fDde540B038C9e06179c0f7;
         address points = 0x2fc95838c71e76ec69ff817983BFf17c710F34E0;
-        ERC20Mock blp = new ERC20Mock("BlastUp", "BLP", 18);
+        ERC20Mock blp = ERC20Mock(address(0x1cc0034324c405Bb092fEFa0B732970D4b6D81D5));
 
         console.log("usdb: ", address(USDB));
         console.log("weth: ", address(WETH));
