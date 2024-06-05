@@ -136,9 +136,16 @@ contract BLPStaking is Ownable {
     }
 
     /// @notice Function for administrators to withdraw extra amounts sent to the contract
-    /// for reward payouts.
-    function withdrawFunds(uint256 amount) external virtual onlyOwner ensureSolvency {
-        stakeToken.safeTransfer(msg.sender, amount);
+    /// for reward payouts and for withdraw funds accidentally sent to the contract.
+    function withdrawFunds(address token, uint256 amount) external virtual onlyOwner ensureSolvency {
+        if (token == address(0)) {
+            (bool success,) = payable(msg.sender).call{value: address(this).balance}("");
+            require(success, "BlastUP: failed to send ETH");
+        } else if (token != address(stakeToken)) {
+            IERC20Metadata(token).safeTransfer(msg.sender, IERC20Metadata(token).balanceOf(address(this)));
+        } else {
+            stakeToken.safeTransfer(msg.sender, amount);
+        }
     }
 
     /* ========== EVENTS ========== */

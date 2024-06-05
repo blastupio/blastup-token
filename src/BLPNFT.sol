@@ -134,4 +134,14 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
             }
         }
     }
+
+    /// @notice It is function only used to withdraw funds accidentally sent to the contract.
+    function withdrawFunds(address token) external onlyOwner {
+        if (token == address(0)) {
+            (bool success,) = payable(msg.sender).call{value: address(this).balance}("");
+            require(success, "BlastUP: failed to send ETH");
+        } else {
+            IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
+        }
+    }
 }

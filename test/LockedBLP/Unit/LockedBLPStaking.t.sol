@@ -69,8 +69,8 @@ contract LockedBLPStakingTest is BaseLockedBLP {
         lockedBLPStaking.stake(amount);
         vm.stopPrank();
         vm.prank(admin);
-        vm.expectRevert("Not implemented");
-        lockedBLPStaking.withdrawFunds(amount);
+        vm.expectRevert();
+        lockedBLPStaking.withdrawFunds(address(lockedBLP), amount);
 
         uint256 reward = lockedBLPStaking.getRewardOf(user);
         assertEq(reward, 0);

@@ -18,10 +18,6 @@ contract LockedBLPStaking is Ownable, BLPStaking {
         uint32 _percent
     ) BLPStaking(_owner, _stakeToken, _points, _pointsOperator, _lockTime, _percent) {}
 
-    modifier ensureSolvency() override {
-        _;
-    }
-
     function claim() public virtual override returns (uint256 reward) {
         UserState storage user = users[msg.sender];
         reward = getRewardOf(msg.sender);
@@ -34,9 +30,5 @@ contract LockedBLPStaking is Ownable, BLPStaking {
             LockedBLP(address(stakeToken)).mint(to, amount);
             emit Claimed(msg.sender, reward);
         }
-    }
-
-    function withdrawFunds(uint256) external view override onlyOwner {
-        revert("Not implemented");
     }
 }
