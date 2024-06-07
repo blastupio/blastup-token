@@ -11,8 +11,9 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {LockedBLP} from "./LockedBLP.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract BlastUPNFT is ERC721, Ownable, Pausable {
+contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable USDB;
@@ -23,14 +24,15 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
     LockedBLP public immutable lockedBLP;
 
     address public addressForCollected;
-    /// @notice MintPrice saved in USDB, the decimals of USDB is 8.
+    /// @notice mintPrice in USDB.
     uint256 public mintPrice;
+    /// @notice BLP price in USDB.
+    uint256 public blpPrice = 0.065e18;
+    uint256 public maxTokenId = 9999;
     uint256 public nextTokenId;
 
     /// @notice Whitelist of addresses which can receive BlastUPNFT.
     mapping(address account => bool) public transferWhitelist;
-
-    uint16[7] public coefficients;
 
     constructor(
         address _weth,
@@ -54,7 +56,6 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
 
         transferWhitelist[address(0)] = true;
-        coefficients = [30, 35, 40, 45, 50, 55, 60];
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -76,23 +77,24 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
         return uint256(price);
     }
 
-    function _getK(uint16 q) internal view returns (uint16) {
-        if (q < 3) return coefficients[0];
-        if (q < 5) return coefficients[1];
-        if (q < 10) return coefficients[2];
-        if (q < 20) return coefficients[3];
-        if (q < 30) return coefficients[4];
-        if (q < 50) return coefficients[5];
-        return coefficients[6];
+    function _getK(uint16 q) internal pure returns (uint256) {
+        if (q < 3) return 300;
+        if (q < 5) return 350;
+        if (q < 10) return 400;
+        if (q < 20) return 450;
+        if (q < 30) return 500;
+        if (q < 50) return 550;
+        return 600;
     }
 
     function _getBLPReward(uint16 quantity) internal view returns (uint256) {
-        return (1000 + _getK(quantity)) * quantity * mintPrice * 1e10 / 65;
+        uint256 usdbValue = (1e4 + _getK(quantity)) * quantity * mintPrice / 1e4;
+        return usdbValue * (10 ** lockedBLP.decimals()) / blpPrice;
     }
 
     /// @notice Converts given amount of USDB to ETH, using oracle price
     function _convertUSDBToETH(uint256 volume) private view returns (uint256) {
-        return volume * 1e18 / _getETHPrice();
+        return volume * 1e18 * (10 ** oracleDecimals) / (_getETHPrice() * (10 ** decimalsUSDB));
     }
 
     function addWhitelistedAddress(address addr) external onlyOwner {
@@ -101,10 +103,6 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
 
     function removeWhitelistedAddress(address addr) external onlyOwner {
         transferWhitelist[addr] = false;
-    }
-
-    function setCoefficients(uint16[7] memory _coefficients) external onlyOwner {
-        coefficients = _coefficients;
     }
 
     function setMintPrice(uint256 _mintPrice) external onlyOwner {
@@ -119,40 +117,39 @@ contract BlastUPNFT is ERC721, Ownable, Pausable {
         _unpause();
     }
 
-    function mint(address to, address paymentContract, uint16 quantity) public payable whenNotPaused {
-        address[] memory toLockedBLP = new address[](1);
-        uint256[] memory amountLockedBLP = new uint256[](1);
-        toLockedBLP[0] = to;
-        amountLockedBLP[0] = _getBLPReward(quantity);
-        uint256 updatedNextTokenId = nextTokenId + quantity;
-        if (msg.sender == owner()) {
-            for (; nextTokenId < updatedNextTokenId; ++nextTokenId) {
-                _mint(to, nextTokenId);
-            }
-            lockedBLP.mint(toLockedBLP, amountLockedBLP);
-        } else {
-            uint256 volume = mintPrice * quantity;
-            if (msg.value > 0 || paymentContract == address(WETH)) {
-                volume = _convertUSDBToETH(volume);
-            } else {
-                require(paymentContract == address(USDB), "BlastUP: invalid payment contract");
-                volume *= 1e10;
-            }
+    function _mintLockedBLP(address to, uint256 amount) internal {
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        users[0] = to;
+        amounts[0] = amount;
+        lockedBLP.mint(users, amounts);
+    }
 
-            for (; nextTokenId < updatedNextTokenId; ++nextTokenId) {
-                _mint(to, nextTokenId);
-            }
-            lockedBLP.mint(toLockedBLP, amountLockedBLP);
+    function mint(address to, address paymentContract, uint16 quantity) public payable whenNotPaused nonReentrant {
+        require(nextTokenId + quantity <= maxTokenId, "BlastUP: max token id reached");
 
-            if (msg.value > 0) {
-                bool success;
-                (success,) = payable(addressForCollected).call{value: volume}("");
-                require(success, "BlastUP: failed to send ETH");
-                (success,) = payable(msg.sender).call{value: msg.value - volume}("");
-                require(success, "BlastUP: failed to send ETH");
+        if (msg.sender != owner()) {
+            uint256 usdbCost = quantity * mintPrice;
+            if (paymentContract == address(USDB)) {
+                USDB.safeTransferFrom(msg.sender, addressForCollected, usdbCost);
             } else {
-                IERC20(paymentContract).safeTransferFrom(msg.sender, addressForCollected, volume);
+                require(paymentContract == address(WETH), "BlastUP: invalid payment contract");
+                uint256 wethCost = _convertUSDBToETH(usdbCost);
+                if (msg.value > 0) {
+                    (bool success,) = payable(addressForCollected).call{value: wethCost}("");
+                    require(success, "BlastUP: failed to send ETH");
+                    (success,) = payable(msg.sender).call{value: msg.value - wethCost}("");
+                    require(success, "BlastUP: failed to send ETH");
+                } else {
+                    WETH.safeTransferFrom(msg.sender, addressForCollected, wethCost);
+                }
             }
+        }
+
+        _mintLockedBLP(to, _getBLPReward(quantity));
+
+        for (uint256 i = 0; i < quantity; i++) {
+            _mint(to, nextTokenId++);
         }
     }
 

@@ -18,7 +18,7 @@ contract LockedBLP is ERC20, Ownable {
     uint8 public tgePercent;
     address public blp;
 
-    mapping(address account => uint256) _initialBalances;
+    mapping(address account => uint256) public allocations;
     mapping(address account => uint256) _claimedAmount;
 
     /// @notice Whitelist of addresses which can receive LockedBLP.
@@ -59,10 +59,10 @@ contract LockedBLP is ERC20, Ownable {
     function getUnlockedAmount(address user) public view returns (uint256) {
         if (block.timestamp < tgeTimestamp) return 0;
 
-        uint256 tgeAmount = _initialBalances[user] * tgePercent / 100;
+        uint256 tgeAmount = allocations[user] * tgePercent / 100;
         if (block.timestamp < vestingStart) return tgeAmount;
 
-        uint256 totalVestedAmount = _initialBalances[user] - tgeAmount;
+        uint256 totalVestedAmount = allocations[user] - tgeAmount;
         uint256 elapsed = Math.min(block.timestamp - vestingStart, vestingDuration);
         uint256 vestedAmount = elapsed * totalVestedAmount / vestingDuration;
 
@@ -123,7 +123,7 @@ contract LockedBLP is ERC20, Ownable {
     function mint(address[] memory users, uint256[] memory amounts) external {
         require(mintersWhitelist[msg.sender], "BlastUP: you are not in the whitelist");
         for (uint256 i = 0; i < users.length; i++) {
-            _initialBalances[users[i]] += amounts[i];
+            allocations[users[i]] += amounts[i];
             _mint(users[i], amounts[i]);
         }
     }

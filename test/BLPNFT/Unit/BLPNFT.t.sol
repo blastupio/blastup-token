@@ -99,7 +99,7 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
         vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount * 2 + bonusForOneBox * 2);
 
         vm.deal(user2, 1e20);
-        blastBox.mint{value: 1e20}(user3, address(0), quantity);
+        blastBox.mint{value: 1e20}(user3, address(WETH), quantity);
         vm.assertGt(user2.balance, 0);
         vm.assertEq(blastBox.balanceOf(user3), 1);
         vm.assertEq(blastBox.ownerOf(3), user3);
