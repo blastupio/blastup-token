@@ -44,7 +44,7 @@ contract BaseBlastUPNFT is Test {
         user = address(10);
         user2 = address(11);
         user3 = address(12);
-        mintPrice = 1e18;
+        mintPrice = 130e8;
         lockedBLPMintAmount = 2000 * 1e18;
         lockTime = 1000;
         percent = 10 * 1e2;
@@ -87,8 +87,7 @@ contract BaseBlastUPNFT is Test {
             address(oracle),
             address(admin),
             mintPrice,
-            address(lockedBLP),
-            lockedBLPMintAmount
+            address(lockedBLP)
         );
         vm.stopPrank();
     }

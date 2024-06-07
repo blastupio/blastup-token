@@ -4,6 +4,9 @@ pragma solidity ^0.8.25;
 import {BaseBlastUPNFT} from "../BaseBLPNFT.t.sol";
 
 contract BlastUPNFTTest is BaseBlastUPNFT {
+    uint16 quantity = 1;
+    uint256 bonusForOneBox = 60 * 1e18;
+
     function test_settersConstants() public {
         vm.assertEq(blastBox.name(), "BlastUP Box");
         vm.assertEq(blastBox.symbol(), "BLPBOX");
@@ -32,7 +35,7 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
 
         vm.startPrank(admin);
         blastBox.addWhitelistedAddress(user2);
-        blastBox.mint(user2, address(0));
+        blastBox.mint(user2, address(0), quantity);
         vm.stopPrank();
 
         vm.prank(user2);
@@ -55,11 +58,11 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
 
         vm.startPrank(user);
         vm.expectRevert();
-        blastBox.mint(user, address(USDB));
+        blastBox.mint(user, address(USDB), quantity);
         vm.stopPrank();
         vm.startPrank(admin);
         vm.expectRevert();
-        blastBox.mint(user, address(USDB));
+        blastBox.mint(user, address(USDB), quantity);
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -69,37 +72,46 @@ contract BlastUPNFTTest is BaseBlastUPNFT {
 
         vm.startPrank(admin);
         blastBox.unpause();
-        blastBox.mint(user, address(0));
+        blastBox.mint(user, address(0), quantity);
     }
 
     function test_mint() public {
         // mint by owner
         vm.startPrank(admin);
-        blastBox.mint(user, address(0));
+        blastBox.mint(user, address(0), quantity);
         vm.assertEq(blastBox.balanceOf(user), 1);
         vm.assertEq(blastBox.ownerOf(0), user);
-        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount);
+        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount + bonusForOneBox);
         //mint by other users
-        USDB.mint(user2, mintPrice * 2);
+        USDB.mint(user2, mintPrice * 2 * 1e10);
         vm.startPrank(user2);
-        USDB.approve(address(blastBox), mintPrice);
-        blastBox.mint(user2, address(USDB));
+        USDB.approve(address(blastBox), mintPrice * 2 * 1e10);
+        blastBox.mint(user2, address(USDB), quantity);
         vm.assertEq(blastBox.balanceOf(user2), 1);
         vm.assertEq(blastBox.ownerOf(1), user2);
-        vm.assertEq(lockedBLP.balanceOf(user2), lockedBLPMintAmount);
+        vm.assertEq(lockedBLP.balanceOf(user2), lockedBLPMintAmount + bonusForOneBox);
 
         WETH.mint(user2, 1e20);
         WETH.approve(address(blastBox), 1e20);
-        blastBox.mint(user, address(WETH));
+        blastBox.mint(user, address(WETH), quantity);
         vm.assertEq(blastBox.balanceOf(user), 2);
         vm.assertEq(blastBox.ownerOf(2), user);
-        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount * 2);
+        vm.assertEq(lockedBLP.balanceOf(user), lockedBLPMintAmount * 2 + bonusForOneBox * 2);
 
         vm.deal(user2, 1e20);
-        blastBox.mint{value: 1e20}(user3, address(0));
+        blastBox.mint{value: 1e20}(user3, address(0), quantity);
         vm.assertGt(user2.balance, 0);
         vm.assertEq(blastBox.balanceOf(user3), 1);
         vm.assertEq(blastBox.ownerOf(3), user3);
-        vm.assertEq(lockedBLP.balanceOf(user3), lockedBLPMintAmount);
+        vm.assertEq(lockedBLP.balanceOf(user3), lockedBLPMintAmount + bonusForOneBox);
+    }
+
+    function test_gas() public {
+        vm.startPrank(admin);
+        blastBox.mint(user, address(0), 61);
+        blastBox.mint(user, address(0), 61);
+        vm.assertEq(blastBox.balanceOf(user), 122);
+        vm.assertEq(blastBox.ownerOf(60), user);
+        vm.assertGt(lockedBLP.balanceOf(user), lockedBLPMintAmount * 122);
     }
 }

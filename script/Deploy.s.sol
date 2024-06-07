@@ -29,7 +29,6 @@ contract DeployScript is Script {
         address oracle;
         address addressForCollected;
         uint256 mintPrice;
-        uint256 lockedBLPMintAmount;
         address usdb;
         address weth;
         uint256[] lockTimes;
@@ -67,8 +66,7 @@ contract DeployScript is Script {
             input.oracle,
             input.addressForCollected,
             input.mintPrice,
-            address(lockedBLP),
-            input.lockedBLPMintAmount
+            address(lockedBLP)
         );
 
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
@@ -118,8 +116,7 @@ contract DeployScript is Script {
         console.log("weth: ", address(WETH));
 
         address addressForCollected = deployer;
-        uint256 mintPrice = 120 * 1e18;
-        uint256 lockedBLPMintAmount = 1000 * 1e18;
+        uint256 mintPrice = 130 * 1e8;
         uint256[] memory lockTimes = new uint256[](3);
         uint32[] memory percents = new uint32[](3);
         lockTimes[0] = 2000;
@@ -143,7 +140,6 @@ contract DeployScript is Script {
                 oracle,
                 addressForCollected,
                 mintPrice,
-                lockedBLPMintAmount,
                 address(USDB),
                 address(WETH),
                 lockTimes,
