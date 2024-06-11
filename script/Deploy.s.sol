@@ -66,7 +66,8 @@ contract DeployScript is Script {
             input.oracle,
             input.addressForCollected,
             input.mintPrice,
-            address(lockedBLP)
+            address(lockedBLP),
+            ""
         );
 
         for (uint256 i = 0; i < input.lockTimes.length; i++) {

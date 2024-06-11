@@ -31,6 +31,8 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
     uint256 public maxTokenId = 9999;
     uint256 public nextTokenId;
 
+    string metadataUrl;
+
     /// @notice Whitelist of addresses which can receive BlastUPNFT.
     mapping(address account => bool) public transferWhitelist;
 
@@ -43,7 +45,8 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
         address _oracle,
         address _addressForCollected,
         uint256 _mintPrice,
-        address _lockedBLP
+        address _lockedBLP,
+        string memory _metadataUrl
     ) ERC721("BlastUP Box", "BLPBOX") Ownable(dao) {
         mintPrice = _mintPrice;
         WETH = IERC20(_weth);
@@ -56,6 +59,11 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
         IBlastPoints(_points).configurePointsOperator(_pointsOperator);
 
         transferWhitelist[address(0)] = true;
+        metadataUrl = _metadataUrl;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return metadataUrl;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -161,5 +169,9 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
         } else {
             IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
         }
+    }
+
+    function setMetadataUrl(string memory _metadataUrl) external onlyOwner {
+        metadataUrl = _metadataUrl;
     }
 }

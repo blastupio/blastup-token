@@ -87,7 +87,8 @@ contract BaseBlastUPNFT is Test {
             address(oracle),
             address(admin),
             mintPrice,
-            address(lockedBLP)
+            address(lockedBLP),
+            ""
         );
         vm.stopPrank();
     }
