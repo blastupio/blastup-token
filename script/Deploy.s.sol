@@ -117,7 +117,7 @@ contract DeployScript is Script {
         console.log("weth: ", address(WETH));
 
         address addressForCollected = deployer;
-        uint256 mintPrice = 130 * 1e8;
+        uint256 mintPrice = 130 * 1e18;
         uint256[] memory lockTimes = new uint256[](3);
         uint32[] memory percents = new uint32[](3);
         lockTimes[0] = 2000;
@@ -137,6 +137,52 @@ contract DeployScript is Script {
                 25,
                 block.timestamp + 3600,
                 24000,
+                deployer,
+                oracle,
+                addressForCollected,
+                mintPrice,
+                address(USDB),
+                address(WETH),
+                lockTimes,
+                percents
+            )
+        );
+    }
+
+    function deployMainnet() public {
+        vm.startBroadcast();
+        (, address deployer,) = vm.readCallers();
+
+        ERC20RebasingMock USDB = ERC20RebasingTestnetMock(0x4300000000000000000000000000000000000003);
+        ERC20RebasingMock WETH = WETHRebasingTestnetMock(0x4300000000000000000000000000000000000004);
+        address oracle = 0x0af23B08bcd8AD35D1e8e8f2D2B779024Bd8D24A;
+        address points = 0x2536FE9ab3F511540F2f9e2eC2A805005C3Dd800;
+        ERC20Mock blp = ERC20Mock(address(0x33C62f70B14C438075be70defb77626b1aC3b503));
+
+        console.log("usdb: ", address(USDB));
+        console.log("weth: ", address(WETH));
+
+        address addressForCollected = deployer;
+        uint256 mintPrice = 130 * 1e18;
+        uint256[] memory lockTimes = new uint256[](3);
+        uint32[] memory percents = new uint32[](3);
+        lockTimes[0] = 20000;
+        percents[0] = 10 * 1e2;
+        lockTimes[1] = 40000;
+        percents[1] = 20 * 1e2;
+        lockTimes[2] = 60000;
+        percents[2] = 30 * 1e2;
+
+        _deploy(
+            DeployStruct(
+                address(blp),
+                deployer,
+                points,
+                deployer,
+                block.timestamp + 120000,
+                25,
+                block.timestamp + 360000,
+                600000,
                 deployer,
                 oracle,
                 addressForCollected,
