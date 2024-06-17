@@ -8,9 +8,9 @@ import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
 import {LockedBLP} from "../../src/LockedBLP.sol";
 import {BlastPointsMock} from "../../src/mocks/BlastPointsMock.sol";
 import {LockedBLPStaking, BLPStaking} from "../../src/LockedBLPStaking.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {BLPBalanceOracle} from "../../src/BLPBalanceOracle.sol";
 
-contract BaseLockedBLP is Test {
+contract BaseBLPBalanceOracle is Test {
     ERC20Mock blp;
 
     address internal admin;
@@ -24,6 +24,14 @@ contract BaseLockedBLP is Test {
     address[] lockedBLPStakingAddresses;
     uint256[] lockTimes;
     uint32[] percents;
+    BLPStaking stakingBLP;
+    BLPStaking stakingBLP2;
+    BLPStaking stakingBLP3;
+    address[] stakingBLPAddresses;
+
+    BLPBalanceOracle blpOracle;
+    uint256 lockTime;
+    uint32 percent;
 
     address user;
     address user2;
@@ -41,6 +49,8 @@ contract BaseLockedBLP is Test {
         percents.push(20 * 1e2);
         lockTimes.push(3000);
         percents.push(30 * 1e2);
+        lockTime = 1000;
+        percent = 10 * 1e2;
 
         vm.startPrank(admin);
         points = new BlastPointsMock();
@@ -57,6 +67,22 @@ contract BaseLockedBLP is Test {
             new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[1], percents[1]);
         lockedBLPStaking3 =
             new LockedBLPStaking(admin, address(lockedBLP), address(points), admin, lockTimes[2], percents[2]);
+
+        stakingBLP = new BLPStaking(admin, address(blp), address(points), admin, lockTime, percent);
+        stakingBLP2 = new BLPStaking(admin, address(blp), address(points), admin, lockTimes[1], percents[1]);
+        stakingBLP3 = new BLPStaking(admin, address(blp), address(points), admin, lockTimes[2], percents[2]);
+        stakingBLPAddresses.push(address(stakingBLP));
+        stakingBLPAddresses.push(address(stakingBLP2));
+        stakingBLPAddresses.push(address(stakingBLP3));
+
+        address[] memory stakings = new address[](lockedBLPStakingAddresses.length + stakingBLPAddresses.length);
+        for (uint256 i = 0; i < lockedBLPStakingAddresses.length; i++) {
+            stakings[i] = lockedBLPStakingAddresses[i];
+        }
+        for (uint256 i = lockedBLPStakingAddresses.length; i < stakings.length; i++) {
+            stakings[i] = stakingBLPAddresses[i - lockedBLPStakingAddresses.length];
+        }
+        blpOracle = new BLPBalanceOracle(admin, stakings);
         vm.stopPrank();
         vm.assertEq(lockedBLP.transferWhitelist(address(lockedBLPStakingAddresses[0])), true);
         vm.assertEq(address(blp), lockedBLP.blp());
