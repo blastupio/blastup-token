@@ -1,7 +1,7 @@
 // // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {BaseLockedBLP, LockedBLPStaking, BLPStaking, LockedBLP, IERC20} from "../BaseLockedBLP.t.sol";
+import {BaseLockedBLP, LockedBLPStaking, BLPStaking, LockedBLASTUP, IERC20} from "../BaseLockedBLP.t.sol";
 
 contract LockedBLPStakingTest is BaseLockedBLP {
     function test_RevertStake_BalanceMustBeGtMin() public {

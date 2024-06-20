@@ -3,20 +3,12 @@
 pragma solidity ^0.8.25;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LockedBLASTUP, LockedBLPStaking, BLPStaking} from "../src/LockedBLPStaking.sol";
 import {BLASTUPToken} from "../src/BLASTUPToken.sol";
 import {BLPBalanceOracle} from "../src/BLPBalanceOracle.sol";
 import {BlastUPNFT} from "../src/BLPNFT.sol";
-import {OracleMock} from "../src/mocks/OracleMock.sol";
-import {ERC20RebasingMock, ERC20RebasingTestnetMock} from "../src/mocks/ERC20RebasingTestnetMock.sol";
-import {WETHRebasingTestnetMock} from "../src/mocks/WETHRebasingTestnetMock.sol";
 
 contract DeployScript is Script {
-    using SafeERC20 for IERC20;
-
     struct DeployStruct {
         address tokenDao;
         address dao;
@@ -38,19 +30,17 @@ contract DeployScript is Script {
 
     function _deploy(DeployStruct memory input) internal {
         // BLASTUPToken
-        BLASTUPToken token = new BLASTUPToken(
-            input.tokenDao
-        );
+        BLASTUPToken token = new BLASTUPToken(input.tokenDao);
 
         // BlastBox Address
-        address blastBoxAddress = vm.computeCreateAddress(address(input.deployer), vm.getNonce(input.deployer));
+        address blastBoxAddress = vm.computeCreateAddress(address(input.deployer), vm.getNonce(input.deployer) + 1);
 
         // LockedStaking Contracts
         address[] memory lockedBLPStakingAddresses = new address[](input.lockTimes.length);
         address[] memory allStakingAddresses = new address[](input.lockTimes.length * 2);
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
             allStakingAddresses[i] = lockedBLPStakingAddresses[i] =
-                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 3));
+                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 2));
             console.log("LockedBLPStaking", lockedBLPStakingAddresses[i], "with percent:", input.percents[i]);
         }
         LockedBLASTUP lockedToken = new LockedBLASTUP(
@@ -124,11 +114,11 @@ contract DeployScript is Script {
         vm.startBroadcast();
         (, address deployer,) = vm.readCallers();
 
-        ERC20RebasingMock USDB = ERC20RebasingTestnetMock(0x66Ed1EEB6CEF5D4aCE858890704Af9c339266276);
-        ERC20RebasingMock WETH = WETHRebasingTestnetMock(0x3470769fBA0Aa949ecdAF83CAD069Fa2DC677389);
+        address USDB = address(0x66Ed1EEB6CEF5D4aCE858890704Af9c339266276);
+        address WETH = address(0x3470769fBA0Aa949ecdAF83CAD069Fa2DC677389);
         address oracle = 0xc447B8cAd2db7a8B0fDde540B038C9e06179c0f7;
         address points = 0x2fc95838c71e76ec69ff817983BFf17c710F34E0;
-        ERC20Mock blp = ERC20Mock(address(0x1cc0034324c405Bb092fEFa0B732970D4b6D81D5));
+        address blp = address(0x1cc0034324c405Bb092fEFa0B732970D4b6D81D5);
 
         console.log("usdb: ", address(USDB));
         console.log("weth: ", address(WETH));
@@ -146,7 +136,7 @@ contract DeployScript is Script {
 
         _deploy(
             DeployStruct(
-                deployer,
+                blp,
                 deployer,
                 points,
                 deployer,
@@ -158,8 +148,8 @@ contract DeployScript is Script {
                 oracle,
                 addressForCollected,
                 mintPrice,
-                address(USDB),
-                address(WETH),
+                USDB,
+                WETH,
                 lockTimes,
                 percents
             )
@@ -191,7 +181,7 @@ contract DeployScript is Script {
 
         _deploy(
             DeployStruct(
-                0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // BLASTUP token dao
+                0x33C62f70B14C438075be70defb77626b1aC3b503, // BLASTUP token
                 0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // Presale + Staking + NFT DAO
                 points,
                 0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // Points Operator
@@ -203,8 +193,8 @@ contract DeployScript is Script {
                 oracle,
                 addressForCollected,
                 mintPrice,
-                address(USDB),
-                address(WETH),
+                USDB,
+                WETH,
                 lockTimes,
                 percents
             )

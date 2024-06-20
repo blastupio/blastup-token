@@ -3,13 +3,13 @@ pragma solidity ^0.8.25;
 
 import {Test, console} from "forge-std/Test.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
-import {BLPToken} from "../../src/BLPToken.sol";
+import {BLASTUPToken} from "../../src/BLASTUPToken.sol";
 
 contract BLPTokenTest is Test {
     address internal admin;
     uint256 internal adminPrivateKey;
 
-    BLPToken blp;
+    BLASTUPToken blp;
 
     address user;
     address user2;
@@ -22,14 +22,14 @@ contract BLPTokenTest is Test {
         user2 = address(11);
         user3 = address(12);
 
-        blp = new BLPToken(admin);
+        blp = new BLASTUPToken(admin);
     }
 
     function test() public {
         vm.assertEq(blp.totalSupply(), 1_000_000_000 * (10 ** 18));
         vm.assertEq(blp.decimals(), 18);
-        vm.assertEq(blp.name(), "BlastUP Token");
-        vm.assertEq(blp.symbol(), "BLP");
+        vm.assertEq(blp.name(), "Test BlastUP Token");
+        vm.assertEq(blp.symbol(), "TBLASTUP");
         vm.assertEq(blp.balanceOf(admin), blp.totalSupply());
         vm.prank(admin);
         blp.transfer(user, 1e18);
