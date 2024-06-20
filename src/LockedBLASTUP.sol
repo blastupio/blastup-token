@@ -9,7 +9,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IBlastPoints} from "./interfaces/IBlastPoints.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LockedBLP is ERC20, Ownable {
+contract LockedBLASTUP is ERC20, Ownable {
     using SafeERC20 for IERC20Metadata;
 
     uint256 public tgeTimestamp;
@@ -21,7 +21,7 @@ contract LockedBLP is ERC20, Ownable {
     mapping(address account => uint256) public allocations;
     mapping(address account => uint256) _claimedAmount;
 
-    /// @notice Whitelist of addresses which can receive LockedBLP.
+    /// @notice Whitelist of addresses which can receive LockedBLASTUP.
     mapping(address account => bool) public transferWhitelist;
     mapping(address minter => bool) public mintersWhitelist;
 
@@ -36,7 +36,7 @@ contract LockedBLP is ERC20, Ownable {
         uint256 _vestingStart,
         uint256 _vestingDuration,
         address blpNFT
-    ) ERC20("BlastUP Locked Token", "LBLP") Ownable(admin) {
+    ) ERC20("BlastUP Locked Token", "LBLASTUP") Ownable(admin) {
         blp = _blp;
         tgeTimestamp = _tgeTimestamp;
         tgePercent = _tgePercent;

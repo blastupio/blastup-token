@@ -6,7 +6,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {LockedBLP, LockedBLPStaking, BLPStaking} from "../src/LockedBLPStaking.sol";
+import {LockedBLASTUP, LockedBLPStaking, BLPStaking} from "../src/LockedBLPStaking.sol";
+import {BLASTUPToken} from "../src/BLASTUPToken.sol";
 import {BLPBalanceOracle} from "../src/BLPBalanceOracle.sol";
 import {BlastUPNFT} from "../src/BLPNFT.sol";
 import {OracleMock} from "../src/mocks/OracleMock.sol";
@@ -17,7 +18,7 @@ contract DeployScript is Script {
     using SafeERC20 for IERC20;
 
     struct DeployStruct {
-        address blp;
+        address tokenDao;
         address dao;
         address points;
         address pointsOperator;
@@ -36,20 +37,28 @@ contract DeployScript is Script {
     }
 
     function _deploy(DeployStruct memory input) internal {
+        // BLASTUPToken
+        BLASTUPToken token = new BLASTUPToken(
+            input.tokenDao
+        );
+
+        // BlastBox Address
+        address blastBoxAddress = vm.computeCreateAddress(address(input.deployer), vm.getNonce(input.deployer));
+
+        // LockedStaking Contracts
         address[] memory lockedBLPStakingAddresses = new address[](input.lockTimes.length);
-        address[] memory stakingAddresses = new address[](input.lockTimes.length * 2);
+        address[] memory allStakingAddresses = new address[](input.lockTimes.length * 2);
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
-            stakingAddresses[i] = lockedBLPStakingAddresses[i] =
-                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 1));
+            allStakingAddresses[i] = lockedBLPStakingAddresses[i] =
+                (vm.computeCreateAddress(input.deployer, vm.getNonce(input.deployer) + i + 3));
             console.log("LockedBLPStaking", lockedBLPStakingAddresses[i], "with percent:", input.percents[i]);
         }
-        address blastBoxAddress = vm.computeCreateAddress(address(input.dao), vm.getNonce(input.dao));
-        LockedBLP lockedBLP = new LockedBLP(
+        LockedBLASTUP lockedToken = new LockedBLASTUP(
             lockedBLPStakingAddresses,
-            input.blp,
+            address(token),
             input.points,
             input.pointsOperator,
-            input.dao,
+            input.tokenDao,
             input.tgeTimestamp,
             input.tgePercent,
             input.vestingStart,
@@ -57,6 +66,7 @@ contract DeployScript is Script {
             blastBoxAddress
         );
 
+        // Blastboxes
         BlastUPNFT blastBox = new BlastUPNFT(
             input.weth,
             input.usdb,
@@ -66,21 +76,27 @@ contract DeployScript is Script {
             input.oracle,
             input.addressForCollected,
             input.mintPrice,
-            address(lockedBLP),
-            ""
+            address(lockedToken),
+            "https://app-api.blastup.io/v1/blastboxes/"
         );
 
+        // Staking Contracts
         for (uint256 i = 0; i < input.lockTimes.length; i++) {
             new LockedBLPStaking(
-                input.dao, address(lockedBLP), input.points, input.pointsOperator, input.lockTimes[i], input.percents[i]
+                input.dao,
+                address(lockedToken),
+                input.points,
+                input.pointsOperator,
+                input.lockTimes[i],
+                input.percents[i]
             );
         }
 
         for (uint256 i = input.lockTimes.length; i < input.lockTimes.length * 2; i++) {
-            stakingAddresses[i] = address(
+            allStakingAddresses[i] = address(
                 new BLPStaking(
                     input.dao,
-                    input.blp,
+                    address(token),
                     input.points,
                     input.pointsOperator,
                     input.lockTimes[i - input.lockTimes.length],
@@ -89,16 +105,17 @@ contract DeployScript is Script {
             );
             console.log(
                 "BLPStaking",
-                stakingAddresses[i - input.lockTimes.length],
+                allStakingAddresses[i - input.lockTimes.length],
                 "with percent:",
                 input.percents[i - input.lockTimes.length]
             );
         }
 
-        BLPBalanceOracle oracle = new BLPBalanceOracle(input.dao, stakingAddresses);
+        // Staking Oracle Contract
+        BLPBalanceOracle oracle = new BLPBalanceOracle(input.dao, allStakingAddresses);
 
-        console.log("BLP", input.blp);
-        console.log("LockedBLP", address(lockedBLP));
+        console.log("BLASTUP", address(token));
+        console.log("LockedBLASTUP", address(lockedToken));
         console.log("BLPBalanceOracle", address(oracle));
         console.log("BlastUP NFT", address(blastBox));
     }
@@ -129,7 +146,7 @@ contract DeployScript is Script {
 
         _deploy(
             DeployStruct(
-                address(blp),
+                deployer,
                 deployer,
                 points,
                 deployer,
@@ -153,11 +170,10 @@ contract DeployScript is Script {
         vm.startBroadcast();
         (, address deployer,) = vm.readCallers();
 
-        ERC20RebasingMock USDB = ERC20RebasingTestnetMock(0x4300000000000000000000000000000000000003);
-        ERC20RebasingMock WETH = WETHRebasingTestnetMock(0x4300000000000000000000000000000000000004);
+        address USDB = 0x4300000000000000000000000000000000000003;
+        address WETH = 0x4300000000000000000000000000000000000004;
         address oracle = 0x0af23B08bcd8AD35D1e8e8f2D2B779024Bd8D24A;
         address points = 0x2536FE9ab3F511540F2f9e2eC2A805005C3Dd800;
-        ERC20Mock blp = ERC20Mock(address(0x33C62f70B14C438075be70defb77626b1aC3b503));
 
         console.log("usdb: ", address(USDB));
         console.log("weth: ", address(WETH));
@@ -175,10 +191,10 @@ contract DeployScript is Script {
 
         _deploy(
             DeployStruct(
-                address(blp),
-                deployer,
+                0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // BLASTUP token dao
+                0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // Presale + Staking + NFT DAO
                 points,
-                deployer,
+                0x2A696e2Dc9de480D77c93d24ab6Ff48637Ad0FdC, // Points Operator
                 block.timestamp + 120000,
                 25,
                 block.timestamp + 360000,

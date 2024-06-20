@@ -21,3 +21,4 @@ blast_sepolia = "${BLAST_SEPOLIA_URL}"
 
 [etherscan]
 blast_sepolia = { key = "${BLASTSCAN_API_KEY}", url = "https://api-sepolia.blastscan.io/api", chain = 168587773 }
+blast = { key = "${BLASTSCAN_API_KEY}", url = "https://api.blastscan.io/api/" }
