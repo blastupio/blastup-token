@@ -23,11 +23,9 @@ contract OFTScript is Script {
     /// @notice Struct to set peers for deployed OFTs
     /// @param oft The address of the OFT
     /// @param rpc The RPC URL of the network
-    /// @param endpoint The address of the layerzero endpoint
     struct SetPeers {
         address oft;
         string rpc;
-        address endpoint;
     }
 
     function _addressToBytes32(address input) internal pure returns (bytes32) {
@@ -79,10 +77,7 @@ contract OFTScript is Script {
     /// @param ofts The array of OFTDeployInput structs
     function deploy_ofts(OFTDeployInput[] calldata ofts) public {
         (, address deployer,) = vm.readCallers();
-        BlastUpOFTAdapter adapter;
-        uint32 BLAST_EID = 30243;
         BlastUPOFT oft;
-        uint256 blastMainnetForkId = vm.createFork(vm.rpcUrl("blast"));
         // Deploy and setPeers for deployed oft and adapter
         for (uint256 i = 0; i < ofts.length; i++) {
             vm.createSelectFork(ofts[i].rpc);
@@ -91,11 +86,6 @@ contract OFTScript is Script {
             oft = new BlastUPOFT(ofts[i].name, ofts[i].symbol, ofts[i].endpoint, deployer);
 
             console2.log("chain", ofts[i].rpc, "OFT addr", address(oft));
-            oft.setPeer(BLAST_EID, _addressToBytes32(address(adapter)));
-            vm.stopBroadcast();
-            vm.selectFork(blastMainnetForkId);
-            vm.startBroadcast();
-            adapter.setPeer(IMessagingChannel(ofts[i].endpoint).eid(), _addressToBytes32(address(oft)));
             vm.stopBroadcast();
         }
     }
@@ -103,22 +93,24 @@ contract OFTScript is Script {
     /// @notice Sets peers for already deployed OFTs
     /// @param peers The array of SetPeers structs
     function setPeers(SetPeers[] calldata peers) public {
-        uint32 currentEid;
+        uint256[] memory forkIds = new uint256[](peers.length);
+        // Create forks
         for (uint256 i = 0; i < peers.length; i++) {
-            vm.createSelectFork(peers[i].rpc);
-            vm.startBroadcast();
-            currentEid = IMessagingChannel(peers[i].endpoint).eid();
-            for (uint256 j = 0; j < i; j++) {
-                if (BlastUPOFT(peers[j].oft).peers(currentEid) == "") {
-                    BlastUPOFT(peers[j].oft).setPeer(currentEid, _addressToBytes32(peers[i].oft));
+            forkIds[i] = vm.createFork(peers[i].rpc);
+        }
+        for (uint256 i = 0; i < peers.length; i++) {
+            vm.selectFork(forkIds[i]);
+            uint32 currentEid = IMessagingChannel(BlastUPOFT(peers[i].oft).endpoint()).eid();
+            for (uint256 j = 0; j < peers.length; j++) {
+                vm.selectFork(forkIds[j]);
+                if (i != j) {
+                    vm.startBroadcast();
+                    if (BlastUPOFT(peers[j].oft).peers(currentEid) == "") {
+                        BlastUPOFT(peers[j].oft).setPeer(currentEid, _addressToBytes32(peers[i].oft));
+                    }
+                    vm.stopBroadcast();
                 }
             }
-            for (uint256 j = i + 1; j < peers.length; j++) {
-                if (BlastUPOFT(peers[j].oft).peers(currentEid) == "") {
-                    BlastUPOFT(peers[j].oft).setPeer(currentEid, _addressToBytes32(peers[i].oft));
-                }
-            }
-            vm.stopBroadcast();
         }
         console2.log("Succesfully set peers for all OFTs");
     }
