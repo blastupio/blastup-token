@@ -92,7 +92,7 @@ contract OFTScript is Script {
 
     /// @notice Sets peers for already deployed OFTs
     /// @param peers The array of SetPeers structs
-    function setPeers(SetPeers[] calldata peers) public {
+    function set_peers(SetPeers[] calldata peers) public {
         uint256[] memory forkIds = new uint256[](peers.length);
         // Create forks
         for (uint256 i = 0; i < peers.length; i++) {
