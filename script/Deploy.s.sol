@@ -94,10 +94,7 @@ contract DeployScript is Script {
                 )
             );
             console.log(
-                "BLPStaking",
-                allStakingAddresses[i],
-                "with percent:",
-                input.percents[i - input.lockTimes.length]
+                "BLPStaking", allStakingAddresses[i], "with percent:", input.percents[i - input.lockTimes.length]
             );
         }
 
