@@ -125,10 +125,20 @@ contract OFTScript is Script {
         console2.log("Succesfully set peers for all OFTs");
     }
 
+    /**
+     * @notice Sends a specified amount of tokens to a given address on a specified chain.
+     * @param oft The address of the OFT (Omnichain Fungible Token) contract.
+     * @param to The address of the recipient.
+     * @param eid The chain ID of the destination chain.
+     * @param amount The amount of tokens to send.
+     */
     function send(address oft, address to, uint32 eid, uint256 amount) public {
         (, address sender,) = vm.readCallers();
         vm.startBroadcast();
+        // Get the address of the underlying token from the OFT contract
         address token = IOFT(oft).token();
+        // If the token address is adapter address
+        // and the sender's allowance is insufficient, approve max allowance
         if (token != oft && IERC20(token).allowance(sender, oft) < amount) {
             IERC20(token).forceApprove(oft, type(uint256).max);
         }
@@ -142,9 +152,11 @@ contract OFTScript is Script {
             composeMsg: "",
             oftCmd: ""
         });
+        // Quote the messaging fee for sending the tokens
         MessagingFee memory fee = IOFT(oft).quoteSend(sendParam, false);
 
-        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) = IOFT(oft).send(sendParam, fee, sender);
+        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
+            IOFT(oft).send{value: fee.nativeFee}(sendParam, fee, sender);
 
         console2.log("amountSentLD:", oftReceipt.amountSentLD, "amountReceivedLD:", oftReceipt.amountReceivedLD);
         console2.log(msgReceipt.nonce);
