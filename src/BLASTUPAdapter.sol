@@ -11,8 +11,4 @@ contract BlastUpOFTAdapter is OFTAdapter {
         address _layerZeroEndpoint, // local endpoint address
         address _owner // token owner used as a delegate in LayerZero Endpoint
     ) OFTAdapter(_token, _layerZeroEndpoint, _owner) Ownable(_owner) {}
-
-    function sharedDecimals() public pure virtual override returns (uint8) {
-        return 18;
-    }
 }
