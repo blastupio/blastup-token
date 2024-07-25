@@ -6,8 +6,18 @@ import {Script, console2} from "forge-std/Script.sol";
 import {BlastUpOFTAdapter} from "../src/BLASTUPAdapter.sol";
 import {BlastUPOFT} from "../src/BLASTUPOFT.sol";
 import {IMessagingChannel} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessagingChannel.sol";
+import {
+    IOFT,
+    SendParam,
+    MessagingFee,
+    MessagingReceipt,
+    OFTReceipt
+} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract OFTScript is Script {
+    using SafeERC20 for IERC20;
+
     /// @notice Struct to store input data for deploying OFTs
     /// @param name The name of the token
     /// @param symbol The symbol of the token
@@ -113,5 +123,32 @@ contract OFTScript is Script {
             }
         }
         console2.log("Succesfully set peers for all OFTs");
+    }
+
+    function send(address oft, address to, uint32 eid, uint256 amount) public {
+        (, address sender,) = vm.readCallers();
+        vm.startBroadcast();
+        address token = IOFT(oft).token();
+        if (token != oft && IERC20(token).allowance(sender, oft) < amount) {
+            IERC20(token).forceApprove(oft, type(uint256).max);
+        }
+
+        SendParam memory sendParam = SendParam({
+            dstEid: eid,
+            to: _addressToBytes32(to),
+            amountLD: amount,
+            minAmountLD: amount,
+            extraOptions: "",
+            composeMsg: "",
+            oftCmd: ""
+        });
+        MessagingFee memory fee = IOFT(oft).quoteSend(sendParam, false);
+
+        (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) = IOFT(oft).send(sendParam, fee, sender);
+
+        console2.log("amountSentLD:", oftReceipt.amountSentLD, "amountReceivedLD:", oftReceipt.amountReceivedLD);
+        console2.log(msgReceipt.nonce);
+
+        vm.stopBroadcast();
     }
 }
