@@ -14,9 +14,11 @@ import {
     OFTReceipt
 } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
 contract OFTScript is Script {
     using SafeERC20 for IERC20;
+    using OptionsBuilder for bytes;
 
     /// @notice Struct to store input data for deploying OFTs
     /// @param name The name of the token
@@ -148,7 +150,7 @@ contract OFTScript is Script {
             to: _addressToBytes32(to),
             amountLD: amount,
             minAmountLD: amount,
-            extraOptions: "",
+            extraOptions: OptionsBuilder.newOptions().addExecutorLzReceiveOption(100000, 0),
             composeMsg: "",
             oftCmd: ""
         });
