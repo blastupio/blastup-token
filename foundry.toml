@@ -20,6 +20,7 @@ shrink_run_limit = 0
 blast_sepolia = "${BLAST_SEPOLIA_URL}"
 optimism_sepolia = "${OPTIMISM_SEPOLIA_URL}"
 blast = "${BLAST_MAINNET_URL}"
+mainnet = "${ETHEREUM_MAINNET_URL}"
 
 [etherscan]
 blast_sepolia = { key = "${BLASTSCAN_API_KEY}", url = "https://api-sepolia.blastscan.io/api", chain = 168587773 }

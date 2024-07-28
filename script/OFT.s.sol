@@ -2,10 +2,13 @@
 
 pragma solidity ^0.8.25;
 
-import {Script, console2} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {BlastUpOFTAdapter} from "../src/BLASTUPAdapter.sol";
 import {BlastUPOFT} from "../src/BLASTUPOFT.sol";
 import {IMessagingChannel} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessagingChannel.sol";
+import {UlnBase, UlnConfig} from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
+import {ILayerZeroEndpointV2} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import {SetConfigParam} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
 import {
     IOFT,
     SendParam,
@@ -35,7 +38,7 @@ contract OFTScript is Script {
     /// @notice Struct to set peers for deployed OFTs
     /// @param oft The address of the OFT
     /// @param rpc The RPC URL of the network
-    struct SetPeers {
+    struct OFTData {
         address oft;
         string rpc;
     }
@@ -55,13 +58,13 @@ contract OFTScript is Script {
         BlastUpOFTAdapter adapter = new BlastUpOFTAdapter(blp, layerZeroEndpoint, deployer);
         vm.stopBroadcast();
 
-        console2.log("adapter", address(adapter));
+        console.log("adapter", address(adapter));
 
         vm.selectFork(optimismForkId);
         vm.startBroadcast();
         BlastUPOFT optimism_oft = new BlastUPOFT("Optimism BLP", "OBLP", layerZeroEndpoint, deployer);
 
-        console2.log("optimism OFT", address(optimism_oft));
+        console.log("optimism OFT", address(optimism_oft));
         optimism_oft.setPeer(40243, _addressToBytes32(address(adapter)));
         vm.stopBroadcast();
 
@@ -82,7 +85,7 @@ contract OFTScript is Script {
         BlastUpOFTAdapter adapter = new BlastUpOFTAdapter(blp, layerZeroEndpoint, deployer);
         vm.stopBroadcast();
 
-        console2.log("adapter", address(adapter));
+        console.log("adapter", address(adapter));
     }
 
     /// @notice Deploys multiple OFTs and sets their peers
@@ -97,14 +100,14 @@ contract OFTScript is Script {
 
             oft = new BlastUPOFT(ofts[i].name, ofts[i].symbol, ofts[i].endpoint, deployer);
 
-            console2.log("chain", ofts[i].rpc, "OFT addr", address(oft));
+            console.log("chain", ofts[i].rpc, "OFT addr", address(oft));
             vm.stopBroadcast();
         }
     }
 
     /// @notice Sets peers for already deployed OFTs
     /// @param peers The array of SetPeers structs
-    function set_peers(SetPeers[] calldata peers) public {
+    function set_peers(OFTData[] calldata peers) public {
         uint256[] memory forkIds = new uint256[](peers.length);
         // Create forks
         for (uint256 i = 0; i < peers.length; i++) {
@@ -112,7 +115,7 @@ contract OFTScript is Script {
         }
         for (uint256 i = 0; i < peers.length; i++) {
             vm.selectFork(forkIds[i]);
-            uint32 currentEid = IMessagingChannel(BlastUPOFT(peers[i].oft).endpoint()).eid();
+            uint32 currentEid = BlastUPOFT(peers[i].oft).endpoint().eid();
             for (uint256 j = 0; j < peers.length; j++) {
                 vm.selectFork(forkIds[j]);
                 if (i != j) {
@@ -124,7 +127,7 @@ contract OFTScript is Script {
                 }
             }
         }
-        console2.log("Succesfully set peers for all OFTs");
+        console.log("Succesfully set peers for all OFTs");
     }
 
     /**
@@ -160,9 +163,94 @@ contract OFTScript is Script {
         (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) =
             IOFT(oft).send{value: fee.nativeFee}(sendParam, fee, sender);
 
-        console2.log("amountSentLD:", oftReceipt.amountSentLD, "amountReceivedLD:", oftReceipt.amountReceivedLD);
-        console2.log(msgReceipt.nonce);
+        console.log("amountSentLD:", oftReceipt.amountSentLD, "amountReceivedLD:", oftReceipt.amountReceivedLD);
+        console.log(msgReceipt.nonce);
 
         vm.stopBroadcast();
+    }
+
+    function find_dead_dvns(OFTData[] memory ofts) public {
+        uint256[] memory forkIds = new uint256[](ofts.length);
+        uint32[] memory eids = new uint32[](ofts.length);
+        // Create forks
+        for (uint256 i = 0; i < ofts.length; i++) {
+            forkIds[i] = vm.createSelectFork(ofts[i].rpc);
+            eids[i] = BlastUPOFT(ofts[i].oft).endpoint().eid();
+        }
+
+        for (uint256 i = 0; i < ofts.length; i++) {
+            vm.selectFork(forkIds[i]);
+            uint32 currentEid = eids[i];
+            address currentOft = ofts[i].oft;
+            ILayerZeroEndpointV2 endpoint = BlastUPOFT(currentOft).endpoint();
+
+            for (uint256 j = 0; j < ofts.length; j++) {
+                if (i != j) {
+                    uint32 otherEid = eids[j];
+                    address sendLibrary = endpoint.getSendLibrary(currentOft, otherEid);
+                    (address receiveLibrary,) = endpoint.getReceiveLibrary(currentOft, otherEid);
+                    if (
+                        _hasDeadDVN(sendLibrary, currentOft, otherEid)
+                            || _hasDeadDVN(receiveLibrary, currentOft, otherEid)
+                    ) {
+                        console.log(
+                            string.concat(
+                                "Route from ", vm.toString(currentEid), " to ", vm.toString(otherEid), " has dead DVNs"
+                            )
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    function _hasDeadDVN(address lib, address oft, uint32 eid) internal view returns (bool hasDead) {
+        UlnConfig memory config = UlnBase(lib).getUlnConfig(oft, eid);
+
+        for (uint256 k = 0; k < config.requiredDVNCount; k++) {
+            hasDead = hasDead || _isDead(config.requiredDVNs[k]);
+        }
+        for (uint256 k = 0; k < config.optionalDVNCount; k++) {
+            hasDead = hasDead || _isDead(config.optionalDVNs[k]);
+        }
+    }
+
+    function _isDead(address dvn) internal view returns (bool) {
+        return address(dvn).code.length == 0;
+    }
+
+    // DVN list: https://docs.layerzero.network/v2/home/modular-security/security-stack-dvns#configuring-security-stack
+    function set_dvns(OFTData memory src, OFTData memory dst, address[] memory dvns) public {
+        vm.createSelectFork(dst.rpc);
+        uint32 otherEid = BlastUPOFT(dst.oft).endpoint().eid();
+
+        vm.createSelectFork(src.rpc);
+        ILayerZeroEndpointV2 endpoint = BlastUPOFT(src.oft).endpoint();
+
+        address sendLibrary = endpoint.getSendLibrary(src.oft, otherEid);
+        (address receiveLibrary,) = endpoint.getReceiveLibrary(src.oft, otherEid);
+
+        vm.startBroadcast();
+        _setLibDVNS(endpoint, sendLibrary, src.oft, otherEid, dvns);
+        _setLibDVNS(endpoint, receiveLibrary, src.oft, otherEid, dvns);
+    }
+
+    function _setLibDVNS(ILayerZeroEndpointV2 endpoint, address lib, address oft, uint32 eid, address[] memory dvns)
+        internal
+    {
+        UlnConfig memory currentConfig = UlnBase(lib).getUlnConfig(oft, eid);
+        UlnConfig memory newConfig = UlnConfig({
+            confirmations: currentConfig.confirmations,
+            requiredDVNs: dvns,
+            requiredDVNCount: uint8(dvns.length),
+            optionalDVNs: new address[](0),
+            optionalDVNCount: 0,
+            optionalDVNThreshold: 0
+        });
+
+        SetConfigParam[] memory params = new SetConfigParam[](1);
+        params[0] = SetConfigParam({eid: eid, configType: 2, config: abi.encode(newConfig)});
+
+        endpoint.setConfig(oft, lib, params);
     }
 }
