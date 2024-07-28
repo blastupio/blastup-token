@@ -11,7 +11,7 @@ import {BlastUPNFT} from "../../src/BLPNFT.sol";
 import {OracleMock} from "../../src/mocks/OracleMock.sol";
 import {WETHRebasingMock} from "../../src/mocks/WETHRebasingMock.sol";
 import {ERC20RebasingMock} from "../../src/mocks/ERC20RebasingMock.sol";
-import {LockedBLP, LockedBLPStaking} from "../../src/LockedBLPStaking.sol";
+import {LockedBLASTUP, LockedBLPStaking} from "../../src/LockedBLPStaking.sol";
 
 contract BaseBlastUPNFT is Test {
     ERC20Mock blp;
@@ -24,7 +24,7 @@ contract BaseBlastUPNFT is Test {
     OracleMock oracle;
     uint256 mintPrice;
     uint256 lockedBLPMintAmount;
-    LockedBLP lockedBLP;
+    LockedBLASTUP lockedBLP;
     LockedBLPStaking lockedBLPStaking;
     address[] lockedBLPStakingAddresses;
 
@@ -64,7 +64,7 @@ contract BaseBlastUPNFT is Test {
 
         lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1));
         address blastBoxAddress = vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2);
-        lockedBLP = new LockedBLP(
+        lockedBLP = new LockedBLASTUP(
             lockedBLPStakingAddresses,
             address(blp),
             address(points),

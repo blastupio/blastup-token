@@ -5,7 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
-import {LockedBLP} from "../../src/LockedBLP.sol";
+import {LockedBLASTUP} from "../../src/LockedBLASTUP.sol";
 import {BlastPointsMock} from "../../src/mocks/BlastPointsMock.sol";
 import {LockedBLPStaking, BLPStaking} from "../../src/LockedBLPStaking.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -16,7 +16,7 @@ contract BaseLockedBLP is Test {
     address internal admin;
     uint256 internal adminPrivateKey;
 
-    LockedBLP lockedBLP;
+    LockedBLASTUP lockedBLP;
     BlastPointsMock points;
     LockedBLPStaking lockedBLPStaking;
     LockedBLPStaking lockedBLPStaking2;
@@ -48,7 +48,7 @@ contract BaseLockedBLP is Test {
         lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 1));
         lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 2));
         lockedBLPStakingAddresses.push(vm.computeCreateAddress(address(admin), vm.getNonce(admin) + 3));
-        lockedBLP = new LockedBLP(
+        lockedBLP = new LockedBLASTUP(
             lockedBLPStakingAddresses, address(blp), address(points), admin, admin, 1000, 10, 2000, 10000, address(0)
         );
         lockedBLPStaking =

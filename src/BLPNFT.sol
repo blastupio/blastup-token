@@ -8,10 +8,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IChainlinkOracle} from "./interfaces/IChainlinkOracle.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {LockedBLP} from "./LockedBLP.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {LockedBLASTUP} from "./LockedBLASTUP.sol";
 
 contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -21,7 +21,7 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
     uint8 public immutable decimalsUSDB;
     IChainlinkOracle public immutable oracle;
     uint8 public immutable oracleDecimals;
-    LockedBLP public immutable lockedBLP;
+    LockedBLASTUP public immutable lockedBLP;
 
     address public addressForCollected;
     /// @notice mintPrice in USDB.
@@ -51,7 +51,7 @@ contract BlastUPNFT is ERC721, Ownable, Pausable, ReentrancyGuard {
         mintPrice = _mintPrice;
         WETH = IERC20(_weth);
         USDB = IERC20(_usdb);
-        lockedBLP = LockedBLP(_lockedBLP);
+        lockedBLP = LockedBLASTUP(_lockedBLP);
         oracle = IChainlinkOracle(_oracle);
         oracleDecimals = oracle.decimals();
         decimalsUSDB = IERC20Metadata(_usdb).decimals();

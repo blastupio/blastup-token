@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract BLPToken is ERC20 {
+contract BLASTUPToken is ERC20 {
     // Initial supply of token 1B, precision is 18
     uint256 constant INITIAL_SUPPLY = 1_000_000_000 * (10 ** 18);
     address public immutable daoAddress;
 
-    constructor(address _daoAddress) ERC20("BlastUP Token", "BLP") {
+    constructor(address _daoAddress) ERC20("Test BlastUP Token", "TBLASTUP") {
         require(_daoAddress != address(0), "DAO address cannot be the zero address");
 
         daoAddress = _daoAddress;

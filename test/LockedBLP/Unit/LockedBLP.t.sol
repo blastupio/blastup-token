@@ -6,7 +6,7 @@ import {BaseLockedBLP} from "../BaseLockedBLP.t.sol";
 contract LockedBLPTest is BaseLockedBLP {
     function test_settersConstants() public {
         vm.assertEq(lockedBLP.name(), "BlastUP Locked Token");
-        vm.assertEq(lockedBLP.symbol(), "LBLP");
+        vm.assertEq(lockedBLP.symbol(), "LBLASTUP");
 
         vm.startPrank(admin);
         lockedBLP.setTgePercent(20);
